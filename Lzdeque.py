@@ -1,3 +1,5 @@
+# https://atcoder.jp/contests/abc413/submissions/69995925
+
 from collections import deque
 import bisect
 
