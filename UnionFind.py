@@ -1,6 +1,7 @@
 # Varified
 # https://judge.yosupo.jp/submission/314547
 # https://atcoder.jp/contests/abc350/submissions/70012959
+# https://atcoder.jp/contests/abc333/submissions/70015327
 
 class UnionFind:
   def __init__(self,N):
@@ -11,7 +12,7 @@ class UnionFind:
     fx = self.find(x)
     fy = self.find(y)
     if fx != fy: # x,y の属する木が異なる
-      self.count -= 1
+      self.groupcount -= 1
       if self.parent[fx] <= self.parent[fy]: # xの木のサイズ >= yの木のサイズ
         self.parent[fx] += self.parent[fy]
         self.parent[fy] = fx
