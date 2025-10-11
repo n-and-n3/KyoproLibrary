@@ -1,5 +1,6 @@
 # Varified
 # https://judge.yosupo.jp/submission/314547
+# https://atcoder.jp/contests/abc350/submissions/70012959
 
 class UnionFind:
   def __init__(self,N):
