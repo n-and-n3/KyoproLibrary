@@ -1,7 +1,6 @@
 # Varified
 # https://judge.yosupo.jp/submission/314547
 
-# 神のUnionFind
 class UnionFind:
   def __init__(self,N):
     self.parent = [-1]*N
