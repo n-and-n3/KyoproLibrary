@@ -4,7 +4,6 @@
 # mexの取得：$O(\log N)$ (償却)
 # https://atcoder.jp/contests/abc330/submissions/69931793
 
-```python
 from collections import defaultdict
 import heapq as hq
 
