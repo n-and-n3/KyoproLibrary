@@ -1,20 +1,19 @@
-# 提出：https://atcoder.jp/contests/tessoku-book/submissions/70202614
-
-class PriorityQue:
+class DeletablePriorityQue:
   def __init__(self,array,reverse = False): #デフォルトはminを取得
     self.array = [None] + array
     for i in range(len(self.array)//2-1,-1,-1):
       self._appropriate(i)
+    self.maltiset = {}
+    for v in array:
+      if v in self.maltiset:
+        self.maltiset[v] += 1
+      else:
+        self.maltiset[v] = 1
     self.reverse = reverse
 
   def pop(self):
     res = self.array[1]
-    if len(self.array) != 2:
-      self.array[1] = self.array.pop()
-    else:
-      self.array.pop()
-    p = 1
-    self._appropriate(p)
+    self.romove(res)
     return res
   
   def _appropriate(self,p):
@@ -30,10 +29,32 @@ class PriorityQue:
   
   def append(self,x):
     self.array.append(x)
+    if x in self.maltiset:
+      self.maltiset[v] += 1
+    else:
+      self.maltiset[v] = 1
     p = len(self.array)-1
     while p > 1 and (self.array[p] < self.array[p//2] if not self.reverse else self.array[p] > self.array[p//2]):
       self.array[p],self.array[p//2] = self.array[p//2],self.array[p]
       p //= 2
+    
+  def remove(self,x):
+    if x not in self.maltiset:
+      raise KeyError(f" {x}")
+    self.maltiset[x] -= 1
+    if self.maltiset[x] == 0:
+      del self.maltiset[x]
+    while self.array[1] not in self.maltiset:
+      if len(self.array) != 2:
+        self.array[1] = self.array.pop()
+      else:
+        self.array.pop()
+      p = 1
+      self._appropriate(p)
+
+  def discard(self,x):
+    if x in self.maltiset:
+      self.remove(x)
   
   def get(self):
     return self.array[1]
@@ -45,6 +66,7 @@ class PriorityQue:
     return len(self) != 0
 
 # =============================================
+"""
 Q = int(input())
 
 pq = PriorityQue([])
@@ -57,5 +79,5 @@ for _ in range(Q):
   elif query[0] == "3":
     pq.pop()
   #print(pq.array[1:])
-    
+"""
     
