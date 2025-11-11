@@ -1,6 +1,7 @@
 # 区間和①：https://atcoder.jp/contests/practice2/submissions/69407123
 # 区間和②：https://judge.u-aizu.ac.jp/onlinejudge/review.jsp?rid=10881162#2
 # 区間min：https://judge.u-aizu.ac.jp/onlinejudge/review.jsp?rid=10881147#2
+# 区間max：https://atcoder.jp/contests/tessoku-book/submissions/70861073
 # SegmentTree (抽象化非再帰) Ver2
 
 import operator
