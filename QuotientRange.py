@@ -1,5 +1,6 @@
-# 要検証問題
+# https://yukicoder.me/submissions/1134484
 # 内部実装の類似を利用：https://atcoder.jp/contests/arc160/submissions/70358315
+
 
 import math
 
