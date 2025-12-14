@@ -7,7 +7,6 @@ import operator
 
 class SegmentTree:  # 0-indexed
   def __init__(self, array, func, e, N=None):
-    if N == None:
       N = 1<<((len(array)-1).bit_length())
       self.N = N
       self.func = func
@@ -17,12 +16,6 @@ class SegmentTree:  # 0-indexed
         self.array[N+i] = array[i]
       for i in range(N-1,0,-1):
         self.array[i] = self.func(self.array[2*i],self.array[2*i+1])
-    else:
-      N = 1<<((N-1).bit_length())
-      self.array = [e]*(2*N)
-      self.N = N
-      self.func = func
-      self.e = e
       
   def write(self,i,x): # 値の上書き
     ii = i + self.N
