@@ -21,7 +21,7 @@ class SegmentTree:  # 0-indexed
     ii = i + self.N
     self.array[ii] = x
     while ii > 1:
-      self.array[ii>>1] = self.func(self.array[ii&0],self.array[ii|1])
+      self.array[ii>>1] = self.func(self.array[ii&(-2)(,self.array[ii|1])
       ii >>= 1
     
   def reduce(self,l,r): # 半開区間[l,r)でのfunc
