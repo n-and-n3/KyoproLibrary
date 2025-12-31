@@ -6,7 +6,7 @@
 import operator
 
 class SegmentTree:  # 0-indexed
-  def __init__(self, array, func, e, N=None):
+  def __init__(self, array, func, e):
       N = 1<<((len(array)-1).bit_length())
       self.N = N
       self.func = func
