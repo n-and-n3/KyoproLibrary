@@ -269,4 +269,6 @@ int main(){
     cout << "original :";vout(PPA);
     cout << "copy :";vout(PPA_copy);
 
+    cout << PPA[2] << endl;
+
 }
