@@ -76,113 +76,50 @@ ll powll(ll a, ll n, ll m){
 
 
 template <typename T>
-struct PartialPersistentArray {
-    struct Record{
-        vector<pair<unsigned int,T>> history;
+struct PartiallyPersistentArray {
+    struct Data{
+        vector<vector<pair<int,T>>> historys;
+        Data(vector<T> array){
+            int N = array.size();
+            historys.resize(N); 
+            for (int i=0; i<N; i++){
+                this->historys[i] = {{0,array[i]},};
+            }
+        }
 
-        Record(){}
-        Record(T x): history(vector<pair<unsigned int,T>>(1,make_pair(0U,x))){}
 
-        T get(unsigned int v){
-            // 指定されたバージョンの数値に対して、それ以下の履歴の中で最大のものを探す
+        T get(int v, int ind){
             int ok=0;
-            int ng=history.size();
-            int mid=0;
+            int ng=historys[ind].size();
+            int mid;
             while (ng - ok > 1){
                 mid = (ok + ng)/2;
-                if (history[mid].first <= v){
+                if (this->historys[ind][mid].first <= v){
                     ok = mid;
                 } else {
                     ng = mid;
                 }
             }
-            return history[ok].second;
+            return this->historys[ind][ok].second;
         }
 
-        void write(unsigned int v, T x){
-            assert(history.back().first < v); // 最新版より大きい数値でないと、バージョンとして認めない。要するに二分探索がバグらないように単調性を要請する
-            if (history.back().second != x){
-                history.push_back({v,x});
+        void write(int v, int ind, T x){
+            assert(this->historys[ind].back().first < v); // 最新版より大きい数値でないと、バージョンとして認めない。要するに二分探索がバグらないように単調性を要請する
+            if (this->historys[ind].back().second != x){
+                this->historys[ind].push_back({v,x});
             }
         }
 
-        T current(unsigned int v){
-            return history.back().second;
+        T current(int ind){
+            return this->historys[ind].back().second;
         }
     };
-
-    struct Data{
-        vector<Record> data;
-        Data(vector<T> array){
-            int N = array.size();
-            data.resize(N); 
-            for (int i=0; i<N; i++){
-                this->data[i] = Record(array[i]);
-            }
-        }
-
-        T get(unsigned int v, int ind){
-            return this->data[ind].get(v);
-        }
-
-        void write(unsigned int v, int ind, T x){
-            this->data[ind].write(v,x);
-        }
-
-        T current(unsigned int v, int ind){
-            return this->data[ind].current(v);
-        }
-        
-    };
-
-    Data* data;
-    unsigned int version;
-    bool is_original;
-    size_t _size;
-
-    // 通常定義用 1
-    PartialPersistentArray(vector<T> array){
-        Data* new_data = new Data{array};
-        this->data = new_data;
-        this->is_original = true;
-        this->version = 0U;
-        this->_size = this->data->data.size();
-    }
-
-    // 通常定義用 2
-    PartialPersistentArray(int N){
-        Data* new_data = new Data{vector<T>(N)};
-        this->data = new_data;
-        this->is_original = true;
-        this->version = 0U;
-        this->_size = this->data->data.size();
-    }
-
-    // 通常定義用 3
-    PartialPersistentArray(int N, T initial){
-        Data* new_data = new Data{vector<T>(N,initial)};
-        this->data = new_data;
-        this->is_original = true;
-        this->version = 0U;
-        this->_size = this->data->data.size();
-    }
-
-    // リスト初期化用
-    PartialPersistentArray(std::initializer_list<T> init): PartialPersistentArray(std::vector<T>(init)) {}
-
-    // コピー用
-    PartialPersistentArray(Data* data, unsigned int version){
-        this->data = data;
-        this->is_original = false;
-        this->version = version;
-        this->_size = this->data->data.size();
-    }
 
     struct NodeRef {
-        PartialPersistentArray<T>* st;
+        PartiallyPersistentArray<T>* st;
         int idx;
 
-        NodeRef(PartialPersistentArray<T>* st, int idx) : st(st), idx(idx) {}
+        NodeRef(PartiallyPersistentArray<T>* st, int idx) : st(st), idx(idx) {}
 
         NodeRef& operator=(const T& val) {st->write(idx, val); return *this;}
         NodeRef& operator=(const NodeRef& other) {st->write(idx, (T)other);return *this;}
@@ -216,37 +153,127 @@ struct PartialPersistentArray {
         return NodeRef(this, i);
     }
 
+// --- 内部構造体 iterator の定義 ---
+    struct iterator {
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type        = T;
+        using difference_type   = ptrdiff_t;
+        using pointer           = T*;
+        using reference         = NodeRef; // 代入を可能にするため NodeRef を返す
+
+        PartiallyPersistentArray<T>* ppa;
+        int idx;
+
+        iterator(PartiallyPersistentArray<T>* ppa, int idx) : ppa(ppa), idx(idx) {}
+
+        // 間接参照
+        NodeRef operator*() const { return (*ppa)[idx]; }
+        // ※ポインタアクセス(->)は T が構造体の場合に複雑になるため、必要に応じて定義
+        
+        // 算術演算
+        iterator& operator++() { idx++; return *this; }
+        iterator operator++(int) { iterator temp = *this; idx++; return temp; }
+        iterator& operator--() { idx--; return *this; }
+        iterator operator--(int) { iterator temp = *this; idx--; return temp; }
+        iterator& operator+=(difference_type n) { idx += n; return *this; }
+        iterator& operator-=(difference_type n) { idx -= n; return *this; }
+        iterator operator+(difference_type n) const { return iterator(ppa, idx + n); }
+        iterator operator-(difference_type n) const { return iterator(ppa, idx - n); }
+        difference_type operator-(const iterator& other) const { return idx - other.idx; }
+
+        // 比較演算
+        bool operator==(const iterator& other) const { return idx == other.idx; }
+        bool operator!=(const iterator& other) const { return idx != other.idx; }
+        bool operator<(const iterator& other) const { return idx < other.idx; }
+        bool operator<=(const iterator& other) const { return idx <= other.idx; }
+        bool operator>(const iterator& other) const { return idx > other.idx; }
+        bool operator>=(const iterator& other) const { return idx >= other.idx; }
+
+        // インデックスアクセス
+        NodeRef operator[](difference_type n) const { return (*ppa)[idx + n]; }
+    };
+
+    // --- begin / end メソッド ---
+    iterator begin() { return iterator(this, 0); }
+    iterator end() { return iterator(this, sz); }
+
+
+    Data* data;
+    unsigned int version;
+    bool is_original;
+    size_t sz;
+
+    // 通常定義用 1
+    PartiallyPersistentArray<T>(vector<T> array){
+        Data* new_data = new Data{array};
+        this->data = new_data;
+        this->is_original = true;
+        this->version = 0;
+        this->sz = this->data->historys.size();
+    }
+
+    // 通常定義用 2
+    PartiallyPersistentArray<T>(int N){
+        Data* new_data = new Data{vector<T>(N)};
+        this->data = new_data;
+        this->is_original = true;
+        this->version = 0;
+        this->sz = this->data->historys.size();
+    }
+
+    // 通常定義用 3
+    PartiallyPersistentArray<T>(int N, T initial){
+        Data* new_data = new Data{vector<T>(N,initial)};
+        this->data = new_data;
+        this->is_original = true;
+        this->version = 0;
+        this->sz = this->data->historys.size();
+    }
+
+    // リスト初期化用
+    PartiallyPersistentArray<T>(initializer_list<T> init): PartiallyPersistentArray<T>(vector<T>(init)) {}
+
+
+
     T get(int ind){
-        assert(0 <= ind && ind < _size);
-        return data->get(this->version,ind);
+        assert(0 <= ind && ind < sz);
+        if (this->is_original){
+            return data->current(ind);
+        } else {
+            return data->get(this->version,ind);
+        }
     }
 
     void write(int ind, T x){
-        assert(0 <= ind && ind < _size);
+        assert(0 <= ind && ind < sz);
         assert(this->is_original);
         this->version++;
         data->write(this->version,ind,x);
     }
 
-    T current(int ind){
-        assert(0 <= ind && ind < _size);
-        return data->current(this->version,ind);
-    }
-
     size_t size(){
-        return _size;
+        return sz;
     }
 
-    PartialPersistentArray<T> copy(){
-        return PartialPersistentArray<T>(this->data,this->version);
+    PartiallyPersistentArray<T> copy(){
+        return PartiallyPersistentArray<T>(this);
     }
 
     operator vector<T>(){
-        vector<T> ans(_size);
-        for (int i=0; i<_size;i++){
+        vector<T> ans(sz);
+        for (int i=0; i<sz;i++){
             ans[i] = get(i);
         }
         return ans;
+    }
+
+    // コピー用
+    private:
+    PartiallyPersistentArray<T>(const PartiallyPersistentArray<T>* ppa){
+        this->data = ppa->data;
+        this->is_original = false;
+        this->version = ppa->version;
+        this->sz = ppa->data->historys.size();
     }
 };
 
@@ -259,7 +286,7 @@ int main(){
     std::cin.tie(nullptr);
 
     vector<int> A = {1,2,3,4,5};
-    PartialPersistentArray<int> PPA = {1,2,3,4,5};
+    PartiallyPersistentArray<ll> PPA = {1,2,3,4,5};
     auto PPA_copy = PPA.copy();
 
     cout << "original :"; vout(PPA);
@@ -269,6 +296,30 @@ int main(){
     cout << "original :";vout(PPA);
     cout << "copy :";vout(PPA_copy);
 
+    //PPA_copy[3] = 114514;
+
+    if (PPA[0] > PPA[1]){
+        cout << "PPA[0] is grater than PPA[1]" << "\n";
+    } else {
+        cout << "nope" << "\n";
+    }
+
+    if (PPA_copy[0] > PPA_copy[1]){
+        cout << "PPA_copy[0] is grater than PPA_copy[1]" << "\n";
+    } else {
+        cout << "nope" << "\n";
+    }
+
     cout << PPA[2] << endl;
+
+    PPA[0] = 2;
+    PPA[1] = 5;
+    PPA[2] = 6;
+    PPA[3] = 98;
+    PPA[4] = 100;
+
+    vout(PPA);
+
+    cout << lower_bound(vall(PPA),5) - PPA.begin() << "\n";
 
 }
