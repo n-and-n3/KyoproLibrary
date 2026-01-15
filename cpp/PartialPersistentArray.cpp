@@ -61,7 +61,7 @@ ll powll(ll a, ll n, ll m){
     LL ans = 1;
     LL p = a;
     while(n > 0){
-        if (n & 1 == 1){
+        if ((n & 1) == 1){
             ans *= p;
             ans %= m;
         }

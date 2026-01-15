@@ -61,7 +61,7 @@ ll powll(ll a, ll n, ll m){
     LL ans = 1;
     LL p = a;
     while(n > 0){
-        if (n & 1 == 1){
+        if ((n & 1) == 1){
             ans *= p;
             ans %= m;
         }
@@ -307,7 +307,7 @@ struct PartiallyPersistentUnionFind{
         return tmp;
     }
 
-    int same(int x,int y){
+    bool same(int x,int y){
         return root(x) == root(y);
     }
 
@@ -420,13 +420,14 @@ int main(){
   }
 
   int Q;
-  int x,y;
+  int x,y,z;
   int ok,ng,mid;
+  int sz;
 
 
   cin >> Q;
   rep(_,Q){
-    cin >> x >> y;
+    cin >> x >> y >> z;
     x--;y--;
     if (UF.same(x,y)){
         ng=0;
@@ -434,6 +435,11 @@ int main(){
         while (ok-ng > 1){
             mid = (ok+ng)/2;
             if (history[mid].same(x,y)){
+                sz = history[mid].size(x);
+            } else {
+                sz = history[mid].size(x) + history[mid].size(y);
+            }
+            if (sz >= z){
                 ok = mid;
             } else {
                 ng = mid;

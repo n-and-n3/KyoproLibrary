@@ -61,7 +61,7 @@ ll powll(ll a, ll n, ll m){
     LL ans = 1;
     LL p = a;
     while(n > 0){
-        if ((n & 1) == 1){
+        if (n & 1 == 1){
             ans *= p;
             ans %= m;
         }
@@ -72,124 +72,82 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-// ===============================================================================
+//===================================================================================
 
-// https://atcoder.jp/contests/atc001/submissions/70817243
-// https://atcoder.jp/contests/abc364/submissions/71087452
+// 部分永続配列を使わないバージョン
+struct PartiallyPersistentUnionFind{
+    vector<int>* parent;
+    vector<int>* marge_times;
+    bool is_origial;
+    int cur_time;
+    int infinity = 1 << 30;
+    PartiallyPersistentUnionFind* pointer; 
 
-struct UnionFind{
-    vector<int> parent;
-    vector<int> next_v;
-    vector<int> edge;
-    int c;
-
-    UnionFind(int n) : parent(n,-1),next_v(n),edge(n),c(n){
-        for(int i=0; i<n; i++){
-            next_v[i] = i;
-        }
+    PartiallyPersistentUnionFind(int n){
+        this->parent = new vector<int>(n,-1);
+        this->marge_times = new vector<int>(n,this->infinity);
+        this->is_origial = true;
+        this->cur_time = 0;
     }
 
+
     int root(int x){
-        int tmp = x;
-        while (parent[tmp] >= 0){
-            tmp = parent[tmp];
+        while ((*this->marge_times)[x] <= this->cur_time){
+            x = (*this->parent)[x];
         }
-
-        while (parent[x] >= 0){
-            parent[x] = tmp;
-            x = parent[x];
-        }
-
-        return tmp;
+        return x;
     }
 
     bool same(int x,int y){
         return root(x) == root(y);
     }
 
-    int size(int x){
-        return -parent[root(x)];
-    }
-
-    bool merge(int x,int y){
+    bool marge(int x,int y){
+        assert(this->is_origial);
         int xr = root(x),yr = root(y);
         if (xr == yr){
-            edge[xr] += 1;
             return false;
         }
-        if (parent[xr] > parent[yr]){
+        this->cur_time++;
+        if ((*this->parent)[xr] > (*this->parent)[yr]){
             swap(xr,yr);
         }
-        parent[xr] += parent[yr];
-        parent[yr] = xr;
-        edge[xr] += edge[yr] + 1;
-        edge[yr] = 0;
-        swap(next_v[xr], next_v[yr]);
-        c -= 1;
+        (*this->parent)[xr] += (*this->parent)[yr];
+        (*this->parent)[yr] = xr;
+        (*this->marge_times)[yr] = this->cur_time;
         return true;
     }
 
-    int edges(int v){
-        return edge[root(v)];
+    int size(int v){
+        assert(this->is_origial);
+        return -(*this->parent)[root(v)];
     }
 
-    int group_count(){
-        return c;
-    }
-
-    vector<int> component(int v){
-        int tmp = v;
-        vector<int> ans;
-        ans.push_back(v);
-        while (next_v[tmp] != v){
-            tmp = next_v[tmp];
-            ans.push_back(tmp);
-        }
-        return ans;
-    }
-
-    vector<int> label(){
-        vector<int> res(parent.size(),-1);
-        int cnt = 0;
-        rep(v,parent.size()){
-            if (res[v] != -1){continue;}
-            int tmp = v;
-            while (res[tmp] == -1){
-                res[tmp] = cnt;
-                tmp = next_v[tmp];
-            }
-            cnt++;
-        }
-        return res;
-    }
-
-    vector<vector<int>> groups(){
-        vector<vector<int>> res(c);
-        vector<int> L = label();
-        rep(v,parent.size()){
-            res[L[v]].push_back(v);
-        }
-        return res;
-    }
-
-    vector<int> group_sizes(){
-        vector<int> res(c);
-        vector<int> L = label();
-        rep(v,parent.size()){
-            res[L[v]] += 1;
-        }
-        return res;
+    PartiallyPersistentUnionFind copy(){
+        return PartiallyPersistentUnionFind(this);
     }
 
     void print(){
       cout << "{";
-        for (int i = 0; i < parent.size(); i++){
-            cout << parent[i] << ", ";
+        for (int i = 0; i < parent->size(); i++){
+            cout << (*this->parent)[i] << ", ";
+        }
+      cout << "}" << "\n";
+      cout << "{";
+        for (int i = 0; i < marge_times->size(); i++){
+            cout << (*this->marge_times)[i] << ", ";
         }
       cout << "}" << "\n";
     }
-};
 
+    PartiallyPersistentUnionFind(PartiallyPersistentUnionFind* ppuf){
+        this->parent = ppuf->parent;
+        this->marge_times = ppuf->marge_times;
+        this->is_origial = false;
+        this->cur_time = ppuf->cur_time;
+    }
+
+};
 
 void print(vector<int> A){
     cout << "{";
@@ -207,37 +165,53 @@ void print(vector<vector<int>> A){
     cout << "}" << "\n";
 }
 
-//======================================================================
+// =============================================================
 
-// https://atcoder.jp/contests/past202203-open/submissions/72463147
+// https://atcoder.jp/contests/agc002/submissions/72462718
 int main(){
-    ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  int N,M;
+  cin >> N >> M;
+  PartiallyPersistentUnionFind UF(N);
 
-    int N,Q;
-    cin >> N >> Q;
+  vector<PartiallyPersistentUnionFind> history;
+  history.push_back(UF.copy());
+  
+  int a,b;
+  rep(_,M){
+    cin >> a >> b;
+    a--;b--;
+    UF.marge(a,b);
+    history.push_back(UF.copy());
+    //history.back().print();
+  }
 
-    UnionFind UF(N); 
+  int Q;
+  int x,y;
+  int ok,ng,mid;
 
-    int q,u,v;
-    rep(i,Q){
-        cin >> q;
-        if (q == 1){
-            cin >> u >> v;
-            u--;v--;
-            UF.merge(u,v);
-        } else {
-            cin >> u;
-            u--;
-            auto ans = UF.component(u);
-            sort(vall(ans));
-            vinc(ans);
-            vout(ans);
+
+  cin >> Q;
+  rep(_,Q){
+    cin >> x >> y;
+    x--;y--;
+    if (UF.same(x,y)){
+        ng=0;
+        ok=M+1;
+        while (ok-ng > 1){
+            mid = (ok+ng)/2;
+            if (history[mid].same(x,y)){
+                ok = mid;
+            } else {
+                ng = mid;
+            }
         }
+        cout << ok << "\n";
+    } else {
+        cout << -1 << "\n";
     }
-    //cout << UF.edges(0) << "\n";
-    //cout << UF.edges(1) << "\n";
-    //cout << UF.edges(2) << "\n";
-    //cout << UF.edges(3) << "\n";
-    //cout << UF.edges(4) << "\n";
+  }
+
 }
