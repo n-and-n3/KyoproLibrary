@@ -123,7 +123,7 @@ struct PartiallyPersistentUnionFind{
         return -(*this->parent)[root(v)];
     }
 
-    int get_merge_time(int x,int y){
+    int connect_time(int x,int y){
         int xr = x;
         int yr = y;
         int t = min((*this->merge_times)[xr],(*this->merge_times)[yr]);
@@ -168,6 +168,7 @@ struct PartiallyPersistentUnionFind{
 
 // =============================================================
 
+// https://atcoder.jp/contests/code-thanks-festival-2017/submissions/72476915
 int main(){
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
@@ -189,7 +190,7 @@ int main(){
   rep(_,Q){
     cin >> x >> y;
     x--;y--;
-    cout << UF.get_merge_time(x,y) << "\n";
+    cout << UF.connect_time(x,y) << "\n";
   }
 
 }
