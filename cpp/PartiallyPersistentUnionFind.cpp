@@ -77,7 +77,7 @@ ll powll(ll a, ll n, ll m){
 // 部分永続配列を使わないバージョン
 struct PartiallyPersistentUnionFind{
     vector<int>* parent;
-    vector<int>* marge_times;
+    vector<int>* merge_times;
     bool is_origial;
     int cur_time;
     int infinity = 1 << 30;
@@ -85,14 +85,14 @@ struct PartiallyPersistentUnionFind{
 
     PartiallyPersistentUnionFind(int n){
         this->parent = new vector<int>(n,-1);
-        this->marge_times = new vector<int>(n,this->infinity);
+        this->merge_times = new vector<int>(n,this->infinity);
         this->is_origial = true;
         this->cur_time = 0;
     }
 
 
     int root(int x){
-        while ((*this->marge_times)[x] <= this->cur_time){
+        while ((*this->merge_times)[x] <= this->cur_time){
             x = (*this->parent)[x];
         }
         return x;
@@ -102,25 +102,42 @@ struct PartiallyPersistentUnionFind{
         return root(x) == root(y);
     }
 
-    bool marge(int x,int y){
+    bool merge(int x,int y){
         assert(this->is_origial);
+        this->cur_time++;
         int xr = root(x),yr = root(y);
         if (xr == yr){
             return false;
         }
-        this->cur_time++;
         if ((*this->parent)[xr] > (*this->parent)[yr]){
             swap(xr,yr);
         }
         (*this->parent)[xr] += (*this->parent)[yr];
         (*this->parent)[yr] = xr;
-        (*this->marge_times)[yr] = this->cur_time;
+        (*this->merge_times)[yr] = this->cur_time;
         return true;
     }
 
     int size(int v){
         assert(this->is_origial);
         return -(*this->parent)[root(v)];
+    }
+
+    int get_merge_time(int x,int y){
+        int xr = x;
+        int yr = y;
+        int t = min((*this->merge_times)[xr],(*this->merge_times)[yr]);
+
+        while (xr != yr && t != infinity){
+            if ((*this->merge_times)[xr] > (*this->merge_times)[yr]){
+                swap(xr,yr);
+            }
+            t = (*this->merge_times)[xr];
+            while ((*this->merge_times)[xr] <= t && (*this->merge_times)[xr] != infinity){
+                xr = (*this->parent)[xr];
+            }
+        }
+        return (t==infinity ? -1 : t);
     }
 
     PartiallyPersistentUnionFind copy(){
@@ -134,40 +151,23 @@ struct PartiallyPersistentUnionFind{
         }
       cout << "}" << "\n";
       cout << "{";
-        for (int i = 0; i < marge_times->size(); i++){
-            cout << (*this->marge_times)[i] << ", ";
+        for (int i = 0; i < merge_times->size(); i++){
+            cout << (*this->merge_times)[i] << ", ";
         }
       cout << "}" << "\n";
     }
 
     PartiallyPersistentUnionFind(PartiallyPersistentUnionFind* ppuf){
         this->parent = ppuf->parent;
-        this->marge_times = ppuf->marge_times;
+        this->merge_times = ppuf->merge_times;
         this->is_origial = false;
         this->cur_time = ppuf->cur_time;
     }
 
 };
 
-void print(vector<int> A){
-    cout << "{";
-    for (int i = 0; i < A.size(); i++){
-        cout << A[i] << ", ";
-    }
-    cout << "}" << "\n";
-}
-void print(vector<vector<int>> A){
-    cout << "{";
-    for (int i = 0; i < A.size(); i++){
-        print(A[i]);
-        cout << "," << "\n";
-    }
-    cout << "}" << "\n";
-}
-
 // =============================================================
 
-// https://atcoder.jp/contests/agc002/submissions/72462718
 int main(){
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
@@ -175,43 +175,21 @@ int main(){
   int N,M;
   cin >> N >> M;
   PartiallyPersistentUnionFind UF(N);
-
-  vector<PartiallyPersistentUnionFind> history;
-  history.push_back(UF.copy());
   
   int a,b;
   rep(_,M){
     cin >> a >> b;
     a--;b--;
-    UF.marge(a,b);
-    history.push_back(UF.copy());
-    //history.back().print();
+    UF.merge(a,b);
   }
 
-  int Q;
-  int x,y;
-  int ok,ng,mid;
-
-
+  int Q,x,y;
   cin >> Q;
+
   rep(_,Q){
     cin >> x >> y;
     x--;y--;
-    if (UF.same(x,y)){
-        ng=0;
-        ok=M+1;
-        while (ok-ng > 1){
-            mid = (ok+ng)/2;
-            if (history[mid].same(x,y)){
-                ok = mid;
-            } else {
-                ng = mid;
-            }
-        }
-        cout << ok << "\n";
-    } else {
-        cout << -1 << "\n";
-    }
+    cout << UF.get_merge_time(x,y) << "\n";
   }
 
 }

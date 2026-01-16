@@ -315,7 +315,7 @@ struct PartiallyPersistentUnionFind{
         return -parent[root(x)];
     }
 
-    bool marge(int x,int y){
+    bool merge(int x,int y){
         assert(is_original);
         int xr = root(x),yr = root(y);
         if (xr == yr){
@@ -400,6 +400,9 @@ struct PartiallyPersistentUnionFind{
 
 
 // ==============================================================================
+
+
+// https://atcoder.jp/contests/agc002/submissions/72462718
 int main(){
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
@@ -415,7 +418,7 @@ int main(){
   rep(_,M){
     cin >> a >> b;
     a--;b--;
-    UF.marge(a,b);
+    UF.merge(a,b);
     history.push_back(UF.copy());
   }
 
