@@ -106,6 +106,16 @@ struct PersistedStack
     PersistedStack clone(){
         return *this;
     }
+
+    operator vector<T>(){
+        vector<T> memo(this->size_num);
+        for (int i = this->size_num-1; 0 <= i; i--){
+            memo[i] = this->top();
+            this->pop();
+        }
+        return memo;
+    }
+
 };
 
 
