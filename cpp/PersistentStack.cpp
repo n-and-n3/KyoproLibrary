@@ -108,10 +108,11 @@ struct PersistedStack
     }
 
     operator vector<T>(){
-        vector<T> memo(this->size_num);
-        for (int i = this->size_num-1; 0 <= i; i--){
-            memo[i] = this->top();
-            this->pop();
+        auto pt = this->clone()
+        vector<T> memo(pt->size_num);
+        for (int i = pt->size_num-1; 0 <= i; i--){
+            memo[i] = pt->top();
+            pt->pop();
         }
         return memo;
     }
