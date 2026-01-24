@@ -53,7 +53,7 @@ ostream &operator<<(ostream &os, const mint &i){ os << i.val(); return os;}
 // ===========================================================================================================================
 
 template <typename T>
-struct PersistedStack
+struct PersistentStack
 {
     struct Node {
         Node* parent;
@@ -63,8 +63,8 @@ struct PersistedStack
     Node* head = nullptr;
     size_t size_num = 0;
     
-    PersistedStack(){}
-    PersistedStack(const PersistedStack& ps) : head(ps.head), size_num(ps.size_num){}
+    PersistentStack(){}
+    PersistentStack(const PersistentStack& ps) : head(ps.head), size_num(ps.size_num){}
 
     void push(T x){
         Node* new_node = new Node{ this->head, x };
@@ -103,23 +103,23 @@ struct PersistedStack
         return this->size_num;
     }
 
-    PersistedStack clone(){
+    PersistentStack clone(){
         return *this;
     }
 
     operator vector<T>(){
-        auto pt = this->clone()
-        vector<T> memo(pt->size_num);
-        for (int i = pt->size_num-1; 0 <= i; i--){
-            memo[i] = pt->top();
-            pt->pop();
+        auto pt = this->clone();
+        vector<T> memo(pt.size_num);
+        for (int i = this->size_num-1; 0 <= i; i--){
+            memo[i] = pt.top();
+            pt.pop();
         }
         return memo;
     }
 
 };
 
-
+// ===========================================================================================================================
 
 int main(){
     int Q;
@@ -128,8 +128,8 @@ int main(){
     string task;
     int num,page;
 
-    PersistedStack<int> A;
-    unordered_map<int,PersistedStack<int>> note;
+    PersistentStack<int> A;
+    unordered_map<int,PersistentStack<int>> note;
 
     rep(i,Q){
         cin >> task;
