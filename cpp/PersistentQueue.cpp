@@ -55,6 +55,15 @@ bool chmin(T &a, const T& b) { return a > b ? a = b, true : false; }
 
 unsigned int bit_length(ll n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
 
+template <typename T>
+T sum(vector<T> A){
+    T res = 0;
+    for (size_t i=0;i<A.size();i++){
+        res += A[i];
+    }
+    return res;
+}
+
 ll powll(ll a, ll n, ll m){
     if (n == 0){return 1;}
     if (n == 1){return a % m;}
@@ -74,162 +83,116 @@ ll powll(ll a, ll n, ll m){
 
 // ===============================================================================
 
-// https://atcoder.jp/contests/atc001/submissions/70817243
-// https://atcoder.jp/contests/abc364/submissions/71087452
 
-struct UnionFind{
-    vector<int> parent;
-    vector<int> next_v;
-    int c;
 
-    UnionFind(int n) : parent(n,-1),next_v(n),c(n){
-        for(int i=0; i<n; i++){
-            next_v[i] = i;
+template <typename T>
+struct PersistentStack
+{
+    struct Node {
+        Node* parent;
+        Node* reverse;
+        T value;
+    };
+
+    Node* head = nullptr;
+    size_t size_num = 0;
+    function<PersistentStack*()> eval;
+
+    
+    PersistentStack(){}
+    PersistentStack(Node* head , size_t size_num) : head(head), size_num(size_num) {}
+    PersistentStack(const PersistentStack& ps) : head(ps.head), size_num(ps.size_num) {}
+
+    void push(T x){
+        Node* new_node = new Node{this->head, nullptr, x};
+        this->head = new_node;
+        this->size_num += 1;
+    }
+
+    T top(){
+        if (!this->empty()){
+            return this->head->value;
+        } else {
+            assert(false);
         }
     }
 
-    int root(int x){
-        int tmp = x;
-        while (parent[tmp] >= 0){
-            tmp = parent[tmp];
-        }
-
-        while (parent[x] >= 0){
-            parent[x] = tmp;
-            x = parent[x];
-        }
-
-        return tmp;
+    void pop(){
+        assert(!this->empty());
+        this->head = this->head->parent;
+        this->size_num -= 1;
     }
 
-    bool same(int x,int y){
-        return root(x) == root(y);
+    bool empty(){
+        return head == nullptr;
     }
 
-    int size(int x){
-        return -parent[root(x)];
+    size_t size(){
+        return this->size_num;
     }
 
-    bool merge(int x,int y){
-        int xr = root(x),yr = root(y);
-        if (xr == yr){
-            return false;
-        }
-        if (parent[xr] > parent[yr]){
-            swap(xr,yr);
-        }
-        parent[xr] += parent[yr];
-        parent[yr] = xr;
-        swap(next_v[xr], next_v[yr]);
-        c -= 1;
-        return true;
-    }
-
-    int group_count(){
-        return c;
-    }
-
-    vector<int> component(int v){
-        int tmp = v;
-        vector<int> ans;
-        ans.push_back(v);
-        while (next_v[tmp] != v){
-            tmp = next_v[tmp];
-            ans.push_back(tmp);
-        }
-        return ans;
-    }
-
-    vector<int> label(){
-        vector<int> res(parent.size(),-1);
-        int cnt = 0;
-        rep(v,parent.size()){
-            if (res[v] != -1){continue;}
-            int tmp = v;
-            while (res[tmp] == -1){
-                res[tmp] = cnt;
-                tmp = next_v[tmp];
+    PersistentStack reversed(){
+        if (this->head->reverse == nullptr){
+            auto pt = this->clone();
+            vector<T> memo(pt.size_num);
+            for (int i = 0; i < this->size_num; i++){
+                memo[i] = pt.top();
+                pt.pop();
             }
-            cnt++;
+            Node* prev = nullptr;
+            for(auto x:memo){
+                prev = new Node{prev, nullptr, x};
+            }
+            this->head->reverse = prev;
         }
-        return res;
+        return PersistentStack<T>(this->head->reverse, this->size_num);
     }
 
-    vector<vector<int>> groups(){
-        vector<vector<int>> res(c);
-        vector<int> L = label();
-        rep(v,parent.size()){
-            res[L[v]].push_back(v);
-        }
-        return res;
+    PersistentStack rev_and_concat(PersistentStack other){
+        auto res = this->clone();
+        
     }
 
-    vector<int> group_sizes(){
-        vector<int> res(c);
-        vector<int> L = label();
-        rep(v,parent.size()){
-            res[L[v]] += 1;
-        }
-        return res;
+    PersistentStack clone(){
+        return *this;
     }
 
-    void print(){
-      cout << "{";
-        for (int i = 0; i < parent.size(); i++){
-            cout << parent[i] << ", ";
+    operator vector<T>(){
+        auto pt = this->clone();
+        vector<T> memo(pt.size_num);
+        for (int i = this->size_num-1; 0 <= i; i--){
+            memo[i] = pt.top();
+            pt.pop();
         }
-      cout << "}" << "\n";
+        return memo;
     }
+
 };
 
 
-void print(vector<int> A){
-    cout << "{";
-    for (int i = 0; i < A.size(); i++){
-        cout << A[i] << ", ";
-    }
-    cout << "}" << "\n";
-}
-void print(vector<vector<int>> A){
-    cout << "{";
-    for (int i = 0; i < A.size(); i++){
-        print(A[i]);
-        cout << "," << "\n";
-    }
-    cout << "}" << "\n";
-}
+template <typename T>
+struct PersistentQueue{
 
-//======================================================================
 
-// https://atcoder.jp/contests/past202203-open/submissions/72463147
+};
+
 int main(){
-    ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
+    PersistentStack<int> PA;
 
-    int N,Q;
-    cin >> N >> Q;
+    PA.push(1);
+    PA.push(2);
+    PA.push(3);
+    PA.push(4);
+    PA.push(5);
 
-    UnionFind UF(N); 
+    vector<int> PA_vec = (vector<int>)PA;
+    vout(PA_vec);
 
-    int q,u,v;
-    rep(i,Q){
-        cin >> q;
-        if (q == 1){
-            cin >> u >> v;
-            u--;v--;
-            UF.merge(u,v);
-        } else {
-            cin >> u;
-            u--;
-            auto ans = UF.component(u);
-            sort(vall(ans));
-            vinc(ans);
-            vout(ans);
-        }
-    }
-    //cout << UF.edges(0) << "\n";
-    //cout << UF.edges(1) << "\n";
-    //cout << UF.edges(2) << "\n";
-    //cout << UF.edges(3) << "\n";
-    //cout << UF.edges(4) << "\n";
+    auto PA_rev = PA.reversed();
+    vector<int> PA_rev_vec = (vector<int>)PA_rev;
+    vout(PA_rev_vec);
+
 }
+
+
+
