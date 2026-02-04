@@ -54,15 +54,15 @@ struct SegmentTree{
     int N;
     vector<T> array;
     function<T(T,T)> op;
-    T e;
+    function<T()> e;
 
-    SegmentTree(vector<T> _array,function<T(T,T)> _op, T _e){
+    SegmentTree(vector<T> _array,function<T(T,T)> _op, function<T()> _e){
         this->_size = _array.size();
         this->op = _op;
         this->e = _e;
         this->N = 1;
         while (this->N < this->_size) this->N <<= 1;
-        this->array = vector<T>(2 * this->N, this->e);
+        this->array = vector<T>(2 * this->N, this->e());
         for (int i = 0;i<_size;i++){
             this->array[i+N] = _array[i];
         }
@@ -128,11 +128,10 @@ struct SegmentTree{
     }
 
     T prod(int l,int r){
-        assert(0 <= l && l < _size);
-        assert(0 <= r && r <= _size);
+        assert(0 <= l && l <= r && r <= _size);
 
-        T resL = e;
-        T resR = e;
+        T resL = e();
+        T resR = e();
         int li = l + N;
         int ri = r + N;
         while (li < ri){
@@ -161,6 +160,7 @@ void print(vector<ll> A){
     }
 }
 
+
 struct DM{
     int d;  // 左端を基準とした、右端の高さ
     int m;  // 左端を基準とした、区間内の最小値
@@ -172,6 +172,12 @@ DM op(DM x, DM y){
     return {x.d + y.d, min(x.m, x.d + y.m)};
 }
 
+int inf = 1 << 28;
+
+DM e(){
+    return {0, inf};
+}
+
 
 int main(){
     int n,q,t,l,r;
@@ -181,10 +187,8 @@ int main(){
     cin >> n >> q;
     cin >> S;
 
-    int inf = 1 << 28;
-    DM e = {0, inf};
 
-    vector<DM> array(n, e);
+    vector<DM> array(n, {0, inf});
     rep(i,n){array[i] = (S[i]=='(' ? DM(1,0) : DM(-1,-1));}
     
     auto ST = SegmentTree<DM>(array, op, e);
@@ -205,3 +209,12 @@ int main(){
         }
     }
 }
+
+/*
+5 3
+(())(
+2 1 4
+1 1 4
+2 1 4
+
+*/
