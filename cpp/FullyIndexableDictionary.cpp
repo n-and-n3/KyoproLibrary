@@ -86,28 +86,38 @@ struct FullyIndexableDictionary{
     using u32 = unsigned int;
     using u64 = unsigned long long;
 
-    size_t sz,count;
+    size_t sz,count;  // szはビット数、countはチャンク数
     bool is_builded;
 
     vector<u64> data;  // 64bit区切りでデータを持っておく
     vector<u32> CT;  // チャンクテーブル、各チャンクの先頭の rank を前計算する。
     vector<u64> BT;  // ブロックテーブル、各ブロックが所属するチャンクの始点からの rank を前計算する。u9 * 7 を u64を使い違法圧縮している。展開用関数を作らねば...
+    int popcount;
 
     FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count((sz+511)/512), data(((sz+511)/512)*8,0), CT((sz+511)/512,0), BT((sz+511)/512,0){};
 
     void set(int i, bool b){
         assert(!is_builded);
+        assert(0 <= i && i < sz);
         if (b){ write1(i);} else { write0(i);}
     }
 
     void set(int i, char b){
         assert(!is_builded);
-        if (b=='0'){ write0(i);} else { write1(i);}
+        assert(0 <= i && i < sz);
+        if (b=='0'){ write0(i);} else if (b == '1'){ write1(i);} else {assert(false);}
     }
 
     void set(int i, int b){
         assert(!is_builded);
-        if (b==0){ write0(i);} else { write1(i);}
+        assert(0 <= i && i < sz);
+        if (b==0){ write0(i);} else if (b == 1){ write1(i);} else {assert(false);}
+    }
+
+    void set(int i, ll b){
+        assert(!is_builded);
+        assert(0 <= i && i < sz);
+        if (b==0){ write0(i);} else if (b == 1){ write1(i);} else {assert(false);}
     }
 
     void build(){
@@ -125,13 +135,46 @@ struct FullyIndexableDictionary{
             }
             rank_all += rank_part;
         }
+        popcount = rank_all;
     }
 
     int rank(int n,int b){  // [0,n) までに含まれる b の個数
+        assert(0 <= n && n <= sz);
         if (b == 0){
             return n - rank1(n);
-        } else {
+        } else if (b == 1){
             return rank1(n);
+        } else {
+            assert(false);
+        }
+    }
+
+    int select(int n,int b){  // rank(k) = n となる最小の k の値
+        assert(0 <= n && n < sz);
+        if (b == 0){
+            if (n < sz - popcount){
+                return select0(n);
+            } else {
+                return -1;
+            }
+        } else if (b == 1){
+            if (n < popcount){
+                return select1(n);
+            } else {
+                return -1;
+            }
+        } else {
+            assert(false);
+        }
+    }
+
+    int rank_all(int b){
+        if (b == 0){
+            return sz - popcount;
+        } else if (b == 1){
+            return popcount;
+        } else {
+            assert(false);
         }
     }
 
@@ -161,8 +204,91 @@ struct FullyIndexableDictionary{
     }
 
     inline int rank1(int n){
-        return CT[n/512] + read64(BT[n/512],(n&511)>>6) + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-1)));
+        return CT[n/512] + read64(BT[n/512],(n&511)>>6) + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
     }
+
+    int select1(int n){  // 二分探索、rank(k,1) <= n となる最大の k を返す
+        int ok_c = 0;
+        int ng_c = count;
+        int mid_c;
+        while (ng_c - ok_c > 1){
+            mid_c = (ok_c+ng_c)/2;
+            if (CT[mid_c] <= n){
+                ok_c = mid_c;
+            } else {
+                ng_c = mid_c;
+            }
+        }
+
+        int ok_b = 0;
+        int ng_b = 8;
+        int mid_b;
+        while (ng_b - ok_b > 1){
+            mid_b = (ok_b+ng_b)/2;
+            if (CT[ok_c] + read64(BT[ok_c],mid_b) <= n){
+                ok_b = mid_b;
+            } else {
+                ng_b = mid_b;
+            }
+        }
+
+        int ok_d = 0;
+        int ng_d = 64;
+        int mid_d;
+        while (ng_d - ok_d > 1){
+            mid_d = (ok_d+ng_d)/2;
+            auto res = (data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)));
+            if (CT[ok_c] + read64(BT[ok_c],ok_b) + __builtin_popcountll((data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)))) <= n){
+                ok_d = mid_d;
+            } else {
+                ng_d = mid_d;
+            }
+        }
+
+        return 512*ok_c + 64*ok_b + ok_d;
+    }
+
+    int select0(int n){  // 二分探索、rank(k,0) <= n となる最大の k を返す
+        int ok_c = 0;
+        int ng_c = count;
+        int mid_c;
+        while (ng_c - ok_c > 1){
+            mid_c = (ok_c+ng_c)/2;
+            if ((512*mid_c) - (CT[mid_c]) <= n){
+                ok_c = mid_c;
+            } else {
+                ng_c = mid_c;
+            }
+        }
+
+        int ok_b = 0;
+        int ng_b = 8;
+        int mid_b;
+        while (ng_b - ok_b > 1){
+            mid_b = (ok_b+ng_b)/2;
+            if ((512*ok_c + 64*mid_b) - (CT[ok_c] + read64(BT[ok_c],mid_b)) <= n){
+                ok_b = mid_b;
+            } else {
+                ng_b = mid_b;
+            }
+        }
+
+        int ok_d = 0;
+        int ng_d = 64;
+        int mid_d;
+        while (ng_d - ok_d > 1){
+            mid_d = (ok_d+ng_d)/2;
+            auto res = (data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)));
+            if ((512*ok_c + 64*ok_b + mid_d) - (CT[ok_c] + read64(BT[ok_c],ok_b) + __builtin_popcountll((data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1))))) <= n){
+                ok_d = mid_d;
+            } else {
+                ng_d = mid_d;
+            }
+        }
+
+        return 512*ok_c + 64*ok_b + ok_d;
+    }
+
 };
 
 
@@ -172,32 +298,77 @@ int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    FullyIndexableDictionary bit_vector(10);
+    int T = 550;
 
-    bit_vector.set(0, 0);
-    bit_vector.set(1, 0);
-    bit_vector.set(2, 1);
-    bit_vector.set(3, 1);
-    bit_vector.set(4, 0);
-    bit_vector.set(5, 0);
-    bit_vector.set(6, 1);
-    bit_vector.set(7, 1);
-    bit_vector.set(8, 0);
-    bit_vector.set(9, 1);
+    FullyIndexableDictionary bit_vector(T);
+
+    rep(i,T){
+        bit_vector.set(i,i&1);
+    }
 
     bit_vector.build();
 
-    cout << bit_vector.rank(0,1) << endl;
-    cout << bit_vector.rank(1,1) << endl;
-    cout << bit_vector.rank(2,1) << endl;
-    cout << bit_vector.rank(3,1) << endl;
-    cout << bit_vector.rank(4,1) << endl;
-    cout << bit_vector.rank(5,1) << endl;
-    cout << bit_vector.rank(6,1) << endl;
-    cout << bit_vector.rank(7,1) << endl;
-    cout << bit_vector.rank(8,1) << endl;
-    cout << bit_vector.rank(9,1) << endl;
-    cout << bit_vector.rank(10,1) << endl;
+    rep(i,T+1){
+        cout << bit_vector.rank(i,0) << " \n"[i == T];
+    }
+    cout << endl;
+    rep(i,T+1){
+        cout << bit_vector.rank(i,1) << " \n"[i == T];
+    }
+    cout << endl;
+    rep(i,T){
+        cout << bit_vector.select(i,0) << " \n"[i == T];
+    }
+    cout << endl;
+    rep(i,T){
+        cout << bit_vector.select(i,1) << " \n"[i == T];
+    }
+    cout << endl;
+
+
+    FullyIndexableDictionary bit_vector2(10);
+
+    bit_vector2.set(0, 0);
+    bit_vector2.set(1, 0);
+    bit_vector2.set(2, 1);
+    bit_vector2.set(3, 1);
+    bit_vector2.set(4, 0);
+    bit_vector2.set(5, 0);
+    bit_vector2.set(6, 1);
+    bit_vector2.set(7, 1);
+    bit_vector2.set(8, 0);
+    bit_vector2.set(9, 1);
+
+    bit_vector2.build();
+
+    cout << bit_vector2.rank(0,1) << endl;
+    cout << bit_vector2.rank(1,1) << endl;
+    cout << bit_vector2.rank(2,1) << endl;
+    cout << bit_vector2.rank(3,1) << endl;
+    cout << bit_vector2.rank(4,1) << endl;
+    cout << bit_vector2.rank(5,1) << endl;
+    cout << bit_vector2.rank(6,1) << endl;
+    cout << bit_vector2.rank(7,1) << endl;
+    cout << bit_vector2.rank(8,1) << endl;
+    cout << bit_vector2.rank(9,1) << endl;
+    cout << bit_vector2.rank(10,1) << endl;
+    cout << endl;
+
+    cout << bit_vector2.select(0,1) << endl;
+    cout << bit_vector2.select(1,1) << endl;
+    cout << bit_vector2.select(2,1) << endl;
+    cout << bit_vector2.select(3,1) << endl;
+    cout << bit_vector2.select(4,1) << endl;
+    cout << bit_vector2.select(5,1) << endl;
+    cout << endl;
+
+    cout << bit_vector2.select(0,0) << endl;
+    cout << bit_vector2.select(1,0) << endl;
+    cout << bit_vector2.select(2,0) << endl;
+    cout << bit_vector2.select(3,0) << endl;
+    cout << bit_vector2.select(4,0) << endl;
+    cout << bit_vector2.select(5,0) << endl;
+    cout << endl;
 
     cout << "end" << endl;
     
