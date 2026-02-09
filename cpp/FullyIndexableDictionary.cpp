@@ -120,6 +120,11 @@ struct FullyIndexableDictionary{
         if (b==0){ write0(i);} else if (b == 1){ write1(i);} else {assert(false);}
     }
 
+    bool test(int i){
+        assert(0 <= i && i < sz);
+        return ((data[i/64]>>(i&63))&1)==1;
+    }
+
     void build(){
         assert(!is_builded);
         is_builded = true;
@@ -340,6 +345,18 @@ int main(){
     bit_vector2.set(9, 1);
 
     bit_vector2.build();
+
+    cout << bit_vector2.test(0) << endl;
+    cout << bit_vector2.test(1) << endl;
+    cout << bit_vector2.test(2) << endl;
+    cout << bit_vector2.test(3) << endl;
+    cout << bit_vector2.test(4) << endl;
+    cout << bit_vector2.test(5) << endl;
+    cout << bit_vector2.test(6) << endl;
+    cout << bit_vector2.test(7) << endl;
+    cout << bit_vector2.test(8) << endl;
+    cout << bit_vector2.test(9) << endl;
+    cout << endl;
 
     cout << bit_vector2.rank(0,1) << endl;
     cout << bit_vector2.rank(1,1) << endl;
