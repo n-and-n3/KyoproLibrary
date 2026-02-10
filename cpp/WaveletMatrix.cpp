@@ -389,9 +389,9 @@ struct WaveletMatrix{
         return i;
     }
 
-    ll quantile(int l, int r, int i){
+    ll range_kth_min(int l, int r, int i){
         assert(0 <= l && l <= r && r <= sz);
-        assert(0 <= i < r-l);
+        assert(0 <= i && i < r-l);
         int c;
         ll res = 0;
         for (int d = degits-1;d >= 0;d--){
@@ -408,6 +408,10 @@ struct WaveletMatrix{
             }
         }
         return res;
+    }
+
+    inline ll range_kth_max(int l, int r, int i){
+        return range_kth_min(l,r,(r-l)-i);
     }
 
     int mex(int l, int r){
@@ -491,6 +495,25 @@ int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
+    int N,Q;
+    cin >> N >> Q;
+    vector<ll> A(N);
+    vin(A);
+
+    WaveletMatrix WM(A);
+
+    int l,r,k;
+    rep(i,Q){
+        cin >> l >> r >> k;
+        cout << WM.range_kth_min(l,r,k) << "\n";
+    }
+}
+
+/*
+int main(){
+    ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
     vector<ll> arr = {5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0};
     WaveletMatrix WM(arr);
 
@@ -536,25 +559,25 @@ int main(){
     cout << WM.select(5,5) << endl;
     cout << endl;
     
-    cout << WM.quantile(0,12,0) << endl;
-    cout << WM.quantile(0,12,1) << endl;
-    cout << WM.quantile(0,12,2) << endl;
-    cout << WM.quantile(0,12,3) << endl;
-    cout << WM.quantile(0,12,4) << endl;
-    cout << WM.quantile(0,12,5) << endl;
-    cout << WM.quantile(0,12,6) << endl;
-    cout << WM.quantile(0,12,7) << endl;
-    cout << WM.quantile(0,12,8) << endl;
-    cout << WM.quantile(0,12,9) << endl;
-    cout << WM.quantile(0,12,10) << endl;
-    cout << WM.quantile(0,12,11) << endl;
+    cout << WM.range_kth_min(0,12,0) << endl;
+    cout << WM.range_kth_min(0,12,1) << endl;
+    cout << WM.range_kth_min(0,12,2) << endl;
+    cout << WM.range_kth_min(0,12,3) << endl;
+    cout << WM.range_kth_min(0,12,4) << endl;
+    cout << WM.range_kth_min(0,12,5) << endl;
+    cout << WM.range_kth_min(0,12,6) << endl;
+    cout << WM.range_kth_min(0,12,7) << endl;
+    cout << WM.range_kth_min(0,12,8) << endl;
+    cout << WM.range_kth_min(0,12,9) << endl;
+    cout << WM.range_kth_min(0,12,10) << endl;
+    cout << WM.range_kth_min(0,12,11) << endl;
     cout << endl;
 
-    cout << WM.quantile(5,10,0) << endl;
-    cout << WM.quantile(5,10,1) << endl;
-    cout << WM.quantile(5,10,2) << endl;
-    cout << WM.quantile(5,10,3) << endl;
-    cout << WM.quantile(5,10,4) << endl;
+    cout << WM.range_kth_min(5,10,0) << endl;
+    cout << WM.range_kth_min(5,10,1) << endl;
+    cout << WM.range_kth_min(5,10,2) << endl;
+    cout << WM.range_kth_min(5,10,3) << endl;
+    cout << WM.range_kth_min(5,10,4) << endl;
     cout << endl;
 
     cout << WM.rangefreq(2,10,3,6) << endl;
@@ -601,3 +624,5 @@ int main(){
 
     cout << "end" << endl;
 }
+
+*/
