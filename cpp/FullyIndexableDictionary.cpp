@@ -12,6 +12,7 @@
 #include <functional>
 #include <cassert>
 #include <bit>
+#include <random>
 #include <atcoder/all>
 
 using namespace std;
@@ -300,6 +301,22 @@ struct FullyIndexableDictionary{
 // ===============================================================================
 
 int main(){
+ 
+    FullyIndexableDictionary A(1000000000);
+
+    mt19937 gen(3);
+    uniform_int_distribution<int> ui(0, 1);
+    uniform_int_distribution<int> ui2(0, 5000000);
+    for (ll i = 0; i < 100000000; i++){
+        if (ui(gen)) {A.set(i,1);} else {A.set(i,0);}
+    }
+    A.build();
+ 
+ }
+
+/*
+int main(){
+
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
@@ -390,3 +407,4 @@ int main(){
     cout << "end" << endl;
     
 }
+*/

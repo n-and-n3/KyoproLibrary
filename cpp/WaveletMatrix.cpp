@@ -54,6 +54,7 @@ bool chmax(T &a, const T& b) { return a < b ? a = b, true : false; }
 template <typename T>
 bool chmin(T &a, const T& b) { return a > b ? a = b, true : false; }
 
+unsigned int bit_length(int n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
 unsigned int bit_length(ll n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
 
 template <typename T>
@@ -95,7 +96,7 @@ struct FullyIndexableDictionary{
     vector<u64> BT;  // ブロックテーブル、各ブロックが所属するチャンクの始点からの rank を前計算する。u9 * 7 を u64を使い違法圧縮している。展開用関数を作らねば...
     int popcount;
 
-    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count((sz+511)/512), data(((sz+511)/512)*8,0), CT((sz+511)/512,0), BT((sz+511)/512,0){};
+    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count(sz/512+1), data((sz/512+1)*8,0), CT((sz/512+1),0), BT((sz/512+1),0){};
 
     void set(int i, bool b){
         assert(!is_builded);
@@ -303,6 +304,10 @@ struct FullyIndexableDictionary{
 };
 
 struct WaveletMatrix{
+    // このテンプレート関数に依存
+    // unsigned int bit_length(int n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
+    // unsigned int bit_length(ll n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
+
     size_t sz, degits;
     vector<FullyIndexableDictionary> data;
 
@@ -340,8 +345,9 @@ struct WaveletMatrix{
         return res;
     }
 
-    ll count(int l, int r, ll x){
+    int count(int l, int r, ll x){
         assert(0 <= l && l <= r && r <= sz);
+        if (x < 0 || (1<<degits) <= x){return 0;}
         int c;
         for (int d=degits-1;d >= 0;d--){
             c = (x>>d)&1;
@@ -350,7 +356,132 @@ struct WaveletMatrix{
         }
         return r-l;
     }
+
+    inline int rank(int i, ll c){
+        return count(0,i,c);
+    }
+
+    int select(int i, ll x){
+        assert(0 <= i && i < sz);
+        if (x < 0 || (((ll)1)<<degits) <= x){return -1;}
+        int l = 0;
+        int r = sz;
+        int c;
+        for (int d=degits-1;d >= 0;d--){
+            c = (x>>d)&1;
+            r = c*data[d].rank_all(0) + data[d].rank(r,c);
+            l = c*data[d].rank_all(0) + data[d].rank(l,c);
+        }
+
+        if (r-l <= i){
+            return -1;
+        }
+
+        i += l;
+        for (int d=0;d < degits;d++){
+            c = (x>>d)&1;
+            // i = c*data[d].rank_all(0) + data[d].rank(j,c);
+            // ↑ を j について解く必要がある
+            // rank(j, c) = i - c * rank_all(0)
+            // j = select(i - c * rank_all(0), c) でいい？
+            i =  data[d].select(i - c * data[d].rank_all(0), c);
+        }
+        return i;
+    }
+
+    ll quantile(int l, int r, int i){
+        assert(0 <= l && l <= r && r <= sz);
+        assert(0 <= i < r-l);
+        int c;
+        ll res = 0;
+        for (int d = degits-1;d >= 0;d--){
+            c = data[d].rank(r,0) - data[d].rank(l,0);
+            if (i < c){
+                res = 2*res;
+                r = data[d].rank(r,0);
+                l = data[d].rank(l,0);
+            } else {
+                res = 2*res+1;
+                i -= c;
+                r = data[d].rank_all(0) + data[d].rank(r,1);
+                l = data[d].rank_all(0) + data[d].rank(l,1);
+            }
+        }
+        return res;
+    }
+
+    int mex(int l, int r){
+        assert(0 <= l && l <= r && r <= sz);
+        int c;
+        ll res = 0;
+        for (int d = degits-1;d >= 0;d--){
+            c = data[d].rank(r,0) - data[d].rank(l,0);
+            if (c < (1<<d)){
+                res = 2*res;
+                r = data[d].rank(r,0);
+                l = data[d].rank(l,0);
+            } else {
+                res = 2*res+1;
+                r = data[d].rank_all(0) + data[d].rank(r,1);
+                l = data[d].rank_all(0) + data[d].rank(l,1);
+            }
+        }
+        return res; 
+    }
+
+
+    int rangefreq(int l,int r, ll x, ll y){
+        assert(0 <= l && l <= r && r <= sz);
+        x = max(x,(ll)0);
+        y = min(y,((ll)1)<<degits);
+        if (y <= x){return 0;}
+        
+        int c;
+        int ans = 0;
+        int p = bit_length(x^y)-1;
+        for (int d=degits-1;d > p;d--){
+            c = (x>>d)&1;
+            r = c*data[d].rank_all(0) + data[d].rank(r,c);
+            l = c*data[d].rank_all(0) + data[d].rank(l,c);
+        }
+
+        int l0,l1,r0,r1;
+        if (p != degits){
+            r0 = data[p].rank(r,0);
+            l0 = data[p].rank(l,0);
+            r1 = data[p].rank_all(0) + data[p].rank(r,1);
+            l1 = data[p].rank_all(0) + data[p].rank(l,1);
+        } else {
+            r0 = r;
+            l0 = l;
+            r1 = 0;
+            l1 = 0;
+        }
+
+        for (int d=p-1;d >= 0;d--){
+            c = (y>>d)&1;
+            if (c == 0){
+                // pass
+            } else { // c == 1
+                ans += data[d].rank(r1,0) - data[d].rank(l1,0);
+            }
+            r1 = c*data[d].rank_all(0) + data[d].rank(r1,c);
+            l1 = c*data[d].rank_all(0) + data[d].rank(l1,c);
+        }
+
+        for (int d=p-1;d >= 0;d--){
+            c = (x>>d)&1;
+            if (c == 0 || d == 0){
+                ans += data[d].rank(r0,1) - data[d].rank(l0,1);
+            }
+            r0 = c*data[d].rank_all(0) + data[d].rank(r0,c);
+            l0 = c*data[d].rank_all(0) + data[d].rank(l0,c);
+        }
+        return ans;
+    }
     
+
+
 };
 
 
@@ -397,8 +528,76 @@ int main(){
     cout << WM.count(7,12,7) << endl;
     cout << endl;
 
+    cout << WM.select(0,5) << endl;
+    cout << WM.select(1,5) << endl;
+    cout << WM.select(2,5) << endl;
+    cout << WM.select(3,5) << endl;
+    cout << WM.select(4,5) << endl;
+    cout << WM.select(5,5) << endl;
+    cout << endl;
+    
+    cout << WM.quantile(0,12,0) << endl;
+    cout << WM.quantile(0,12,1) << endl;
+    cout << WM.quantile(0,12,2) << endl;
+    cout << WM.quantile(0,12,3) << endl;
+    cout << WM.quantile(0,12,4) << endl;
+    cout << WM.quantile(0,12,5) << endl;
+    cout << WM.quantile(0,12,6) << endl;
+    cout << WM.quantile(0,12,7) << endl;
+    cout << WM.quantile(0,12,8) << endl;
+    cout << WM.quantile(0,12,9) << endl;
+    cout << WM.quantile(0,12,10) << endl;
+    cout << WM.quantile(0,12,11) << endl;
+    cout << endl;
+
+    cout << WM.quantile(5,10,0) << endl;
+    cout << WM.quantile(5,10,1) << endl;
+    cout << WM.quantile(5,10,2) << endl;
+    cout << WM.quantile(5,10,3) << endl;
+    cout << WM.quantile(5,10,4) << endl;
+    cout << endl;
+
+    cout << WM.rangefreq(2,10,3,6) << endl;
+    cout << endl;
+
+
+    cout << WM.rangefreq(2,10,0,0) << endl;
+    cout << WM.rangefreq(2,10,0,1) << endl;
+    cout << WM.rangefreq(2,10,0,2) << endl;
+    cout << WM.rangefreq(2,10,0,3) << endl;
+    cout << WM.rangefreq(2,10,0,4) << endl;
+    cout << WM.rangefreq(2,10,0,5) << endl;
+    cout << WM.rangefreq(2,10,0,6) << endl;
+    cout << WM.rangefreq(2,10,0,7) << endl;
+    cout << WM.rangefreq(2,10,0,8) << endl;
+    cout << endl;
+
+
+    vector<ll> arr2 = {5,7,2,1,0,4,3,8,6,9};
+    WaveletMatrix WM2(arr2);
+
+    cout << WM2.mex(0,0) << endl;
+    cout << WM2.mex(0,1) << endl;
+    cout << WM2.mex(0,2) << endl;
+    cout << WM2.mex(0,3) << endl;
+    cout << WM2.mex(0,4) << endl;
+    cout << WM2.mex(0,5) << endl;
+    cout << WM2.mex(0,6) << endl;
+    cout << WM2.mex(0,7) << endl;
+    cout << WM2.mex(0,8) << endl;
+    cout << WM2.mex(0,9) << endl;
+    cout << WM2.mex(0,10) << endl;
+    cout << endl;
+
+    cout << WM2.mex(4,4) << endl;
+    cout << WM2.mex(4,5) << endl;
+    cout << WM2.mex(4,6) << endl;
+    cout << WM2.mex(4,7) << endl;
+    cout << WM2.mex(4,8) << endl;
+    cout << WM2.mex(4,9) << endl;
+    cout << WM2.mex(4,10) << endl;
+    cout << endl;
 
 
     cout << "end" << endl;
-    
 }
