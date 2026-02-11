@@ -389,6 +389,7 @@ struct WaveletMatrix{
     }
 
     int mex1(int l, int r){  // 配列の値が、0-indexedの置換のとき、区間[l,r)のmexを返す
+        assert(0 <= l && l <= r && r <= sz);
         return min(l != 0 ? range_kth_min(0,l,0) : sz, r != sz ? range_kth_min(r,sz,0) : sz);
     }
 
