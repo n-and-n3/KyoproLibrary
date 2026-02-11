@@ -190,22 +190,6 @@ struct FullyIndexableDictionary{
         data[i>>6] &= ~(((u64)1)<<(i&((1<<6)-1)));
     }
 
-    inline int read64(u64 bits, int i){
-        // assert(0 <= i < 8)
-        if (i == 0){
-            return 0;
-        } else {
-            return (bits>>((i-1)*9))&((1<<9)-1);
-        }
-    }
-
-    inline void write64(u64& bits, int num, int i){
-        // assert(0 <= i < 8)
-        if (i != 0){
-            bits |= ((u64)num)<<((i-1)*9);
-        }
-    }
-
     inline int rank1(int n){
         return BT[n/64] + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
     }
@@ -303,7 +287,7 @@ struct WaveletMatrix{
         }
     }
 
-    T access(int i){
+    T access(int i){ // 元の配列の i 番目の要素を返す
         T res = 0;
         int c;
         for (int d=degits-1;d>=0;d--){
@@ -314,9 +298,9 @@ struct WaveletMatrix{
         return res;
     }
 
-    int count(int l, int r, T x){
+    int count(int l, int r, T x){ // 区間[l,r) の中に何個のcがあるかを返す
         assert(0 <= l && l <= r && r <= sz);
-        if (x < 0 || (1<<degits) <= x){return 0;}
+        if (x < 0 || ((T)1<<degits) <= x){return 0;}
         int c;
         for (int d=degits-1;d >= 0;d--){
             c = (x>>d)&1;
@@ -326,11 +310,11 @@ struct WaveletMatrix{
         return r-l;
     }
 
-    inline int rank(int i, T c){
+    inline int rank(int i, T c){ // 区間[0,i) の中に何個のcがあるかを返す
         return count(0,i,c);
     }
 
-    int select(int i, T x){
+    int select(int i, T x){  // 全体の中で、i番目の x のインデックスを返す
         assert(0 <= i && i < sz);
         if (x < 0 || (((T)1)<<degits) <= x){return -1;}
         int l = 0;
@@ -358,9 +342,11 @@ struct WaveletMatrix{
         return i;
     }
 
-    T range_kth_min(int l, int r, int i){
+    T range_kth_min(int l, int r, int i){  // 区間[l,r)に含まれる中で i 番目に小さいものを返す
         assert(0 <= l && l <= r && r <= sz);
-        assert(0 <= i && i < r-l);
+        if (i < 0 || r-l <= i){
+            return -1;
+        }
         int c;
         T res = 0;
         for (int d = degits-1;d >= 0;d--){
@@ -379,11 +365,11 @@ struct WaveletMatrix{
         return res;
     }
 
-    inline T range_kth_max(int l, int r, int i){
-        return range_kth_min(l,r,(r-l)-i);
+    inline T range_kth_max(int l, int r, int i){ // 区間[l,r)に含まれる中で i 番目に大きいものを返す
+        return range_kth_min(l,r,(r-l)-i-1);
     }
 
-    int mex(int l, int r){
+    int mex0(int l, int r){  // 配列の値が、0-indexedの置換のとき、区間[l,r)のmexを返す
         assert(0 <= l && l <= r && r <= sz);
         int c;
         T res = 0;
@@ -402,12 +388,11 @@ struct WaveletMatrix{
         return res; 
     }
 
-    int mex_(int l, int r){
+    int mex1(int l, int r){  // 配列の値が、0-indexedの置換のとき、区間[l,r)のmexを返す
         return min(l != 0 ? range_kth_min(0,l,0) : sz, r != sz ? range_kth_min(r,sz,0) : sz);
     }
 
-
-    int rangefreq(int l,int r, T x, T y){
+    int range_freq(int l,int r, T x, T y){ // 区間[l,r)、値の範囲[x,y) であるようなものの個数を返す
         assert(0 <= l && l <= r && r <= sz);
         x = max(x,(T)0);
         y = min(y,((T)1)<<degits);
@@ -459,48 +444,58 @@ struct WaveletMatrix{
         return ans;
     }
 
-    T predecessor(int l, int r, T v){ // 区間[l,r)に含まれる v 以上の最大の要素を返す。無ければ -1 を返す。
+    T successor(int l, int r, T v){ // 区間[l,r)に含まれる v 以上の最小の要素を返す。無ければ -1 を返す。
+        return range_kth_min(l,r,range_freq(l,r,0,v));
+    }
 
+    T predecessor(int l, int r, T v){ // 区間[l,r)に含まれる v 未満の最小の要素を返す。無ければ -1 を返す。
+        return range_kth_max(l,r,range_freq(l,r,v,((T)1)<<degits));
     }
 
     inline T operator[](int i) {
         return access(i);
     }
 
+    size_t size(){
+        return sz;
+    }
 
 };
 
 
 // ===============================================================================
 
-
+/*
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    int N;
-    cin >> N;
-    vector<int> B(N);
-    vin(B);
-    vdec(B);
-
-    WaveletMatrix<int> WM(B);
-
-    ll ans = 0;
-    int b;
-    ll x,y;
-    rep(i,N){
-        b = WM[i];
-        x = WM.rangefreq(0,i,0,b);
-        y = WM.rangefreq(i+1,N,0,b);
-        ans += (1+x)*(1+y);
+    int N,M;
+    cin >> N >> M;
+    vector<int> E(2*N);
+    int a,b;
+    rep(i,M){
+        cin >> a >> b;
+        a--;b--;
+        E[a] = b;
     }
+    WaveletMatrix<int> WM(E);
 
-    cout << ans << endl;
+    int Q;
+    cin >> Q;
+    ll ans = 0;
+    ll c,d;
+    rep(i,Q){
+        cin >> c >> d;
+        c--;d--;
+        if (c>d){swap(c,d);}
+        ans = WM.range_freq(0,c,c,d) + WM.range_freq(c,d,d,2*N);
+        cout << ans << endl;
+    }
 }
+*/
 
 
-/*
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
@@ -571,61 +566,115 @@ int main(){
     cout << WM.range_kth_min(5,10,4) << endl;
     cout << endl;
 
-    cout << WM.rangefreq(2,10,3,6) << endl;
+    cout << WM.range_freq(2,10,3,6) << endl;
     cout << endl;
 
 
-    cout << WM.rangefreq(2,10,0,0) << endl;
-    cout << WM.rangefreq(2,10,0,1) << endl;
-    cout << WM.rangefreq(2,10,0,2) << endl;
-    cout << WM.rangefreq(2,10,0,3) << endl;
-    cout << WM.rangefreq(2,10,0,4) << endl;
-    cout << WM.rangefreq(2,10,0,5) << endl;
-    cout << WM.rangefreq(2,10,0,6) << endl;
-    cout << WM.rangefreq(2,10,0,7) << endl;
-    cout << WM.rangefreq(2,10,0,8) << endl;
+    cout << WM.range_freq(2,10,0,0) << endl;
+    cout << WM.range_freq(2,10,0,1) << endl;
+    cout << WM.range_freq(2,10,0,2) << endl;
+    cout << WM.range_freq(2,10,0,3) << endl;
+    cout << WM.range_freq(2,10,0,4) << endl;
+    cout << WM.range_freq(2,10,0,5) << endl;
+    cout << WM.range_freq(2,10,0,6) << endl;
+    cout << WM.range_freq(2,10,0,7) << endl;
+    cout << WM.range_freq(2,10,0,8) << endl;
+    cout << endl;
+
+    cout << WM.successor(0,12,0) << endl;
+    cout << WM.successor(0,12,1) << endl;
+    cout << WM.successor(0,12,2) << endl;
+    cout << WM.successor(0,12,3) << endl;
+    cout << WM.successor(0,12,4) << endl;
+    cout << WM.successor(0,12,5) << endl;
+    cout << WM.successor(0,12,6) << endl;
+    cout << WM.successor(0,12,7) << endl;
+    cout << WM.successor(0,12,8) << endl;
+    cout << WM.successor(0,12,9) << endl;
     cout << endl;
 
 
     vector<ll> arr2 = {5,7,2,1,0,4,3,8,6,9};
     WaveletMatrix WM2(arr2);
 
-    cout << WM2.mex(0,0) << endl;
-    cout << WM2.mex(0,1) << endl;
-    cout << WM2.mex(0,2) << endl;
-    cout << WM2.mex(0,3) << endl;
-    cout << WM2.mex(0,4) << endl;
-    cout << WM2.mex(0,5) << endl;
-    cout << WM2.mex(0,6) << endl;
-    cout << WM2.mex(0,7) << endl;
-    cout << WM2.mex(0,8) << endl;
-    cout << WM2.mex(0,9) << endl;
-    cout << WM2.mex(0,10) << endl;
+    cout << WM2.mex0(0,0) << endl;
+    cout << WM2.mex0(0,1) << endl;
+    cout << WM2.mex0(0,2) << endl;
+    cout << WM2.mex0(0,3) << endl;
+    cout << WM2.mex0(0,4) << endl;
+    cout << WM2.mex0(0,5) << endl;
+    cout << WM2.mex0(0,6) << endl;
+    cout << WM2.mex0(0,7) << endl;
+    cout << WM2.mex0(0,8) << endl;
+    cout << WM2.mex0(0,9) << endl;
+    cout << WM2.mex0(0,10) << endl;
     cout << endl;
 
-    cout << WM2.mex_(0,0) << endl;
-    cout << WM2.mex_(0,1) << endl;
-    cout << WM2.mex_(0,2) << endl;
-    cout << WM2.mex_(0,3) << endl;
-    cout << WM2.mex_(0,4) << endl;
-    cout << WM2.mex_(0,5) << endl;
-    cout << WM2.mex_(0,6) << endl;
-    cout << WM2.mex_(0,7) << endl;
-    cout << WM2.mex_(0,8) << endl;
-    cout << WM2.mex_(0,9) << endl;
-    cout << WM2.mex_(0,10) << endl;
+    cout << WM2.mex1(0,0) << endl;
+    cout << WM2.mex1(0,1) << endl;
+    cout << WM2.mex1(0,2) << endl;
+    cout << WM2.mex1(0,3) << endl;
+    cout << WM2.mex1(0,4) << endl;
+    cout << WM2.mex1(0,5) << endl;
+    cout << WM2.mex1(0,6) << endl;
+    cout << WM2.mex1(0,7) << endl;
+    cout << WM2.mex1(0,8) << endl;
+    cout << WM2.mex1(0,9) << endl;
+    cout << WM2.mex1(0,10) << endl;
     cout << endl;
 
-    cout << WM2.mex(4,4) << endl;
-    cout << WM2.mex(4,5) << endl;
-    cout << WM2.mex(4,6) << endl;
-    cout << WM2.mex(4,7) << endl;
-    cout << WM2.mex(4,8) << endl;
-    cout << WM2.mex(4,9) << endl;
-    cout << WM2.mex(4,10) << endl;
+    cout << WM2.mex0(4,4) << endl;
+    cout << WM2.mex0(4,5) << endl;
+    cout << WM2.mex0(4,6) << endl;
+    cout << WM2.mex0(4,7) << endl;
+    cout << WM2.mex0(4,8) << endl;
+    cout << WM2.mex0(4,9) << endl;
+    cout << WM2.mex0(4,10) << endl;
+    cout << endl;
+
+
+    vector<ll> arr3 = {0,1,5,4,1,4,5,7,9};
+    WaveletMatrix WM3(arr3);
+
+    cout << WM3.successor(0,9,0) << endl;
+    cout << WM3.successor(0,9,1) << endl;
+    cout << WM3.successor(0,9,2) << endl;
+    cout << WM3.successor(0,9,3) << endl;
+    cout << WM3.successor(0,9,4) << endl;
+    cout << WM3.successor(0,9,5) << endl;
+    cout << WM3.successor(0,9,6) << endl;
+    cout << WM3.successor(0,9,7) << endl;
+    cout << WM3.successor(0,9,8) << endl;
+    cout << WM3.successor(0,9,9) << endl;
+    cout << WM3.successor(0,9,10) << endl;
+    cout << endl;
+
+    cout << WM3.successor(0,5,0) << endl;
+    cout << WM3.successor(0,5,1) << endl;
+    cout << WM3.successor(0,5,2) << endl;
+    cout << WM3.successor(0,5,3) << endl;
+    cout << WM3.successor(0,5,4) << endl;
+    cout << WM3.successor(0,5,5) << endl;
+    cout << WM3.successor(0,5,6) << endl;
+    cout << WM3.successor(0,5,7) << endl;
+    cout << WM3.successor(0,5,8) << endl;
+    cout << WM3.successor(0,5,9) << endl;
+    cout << WM3.successor(0,5,10) << endl;
+    cout << endl;
+
+    cout << WM3.predecessor(0,9,0) << endl;
+    cout << WM3.predecessor(0,9,1) << endl;
+    cout << WM3.predecessor(0,9,2) << endl;
+    cout << WM3.predecessor(0,9,3) << endl;
+    cout << WM3.predecessor(0,9,4) << endl;
+    cout << WM3.predecessor(0,9,5) << endl;
+    cout << WM3.predecessor(0,9,6) << endl;
+    cout << WM3.predecessor(0,9,7) << endl;
+    cout << WM3.predecessor(0,9,8) << endl;
+    cout << WM3.predecessor(0,9,9) << endl;
+    cout << WM3.predecessor(0,9,10) << endl;
     cout << endl;
 
 
     cout << "end" << endl;
 }
-*/

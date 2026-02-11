@@ -189,22 +189,6 @@ struct FullyIndexableDictionary{
         data[i>>6] &= ~(((u64)1)<<(i&((1<<6)-1)));
     }
 
-    inline int read64(u64 bits, int i){
-        // assert(0 <= i < 8)
-        if (i == 0){
-            return 0;
-        } else {
-            return (bits>>((i-1)*9))&((1<<9)-1);
-        }
-    }
-
-    inline void write64(u64& bits, int num, int i){
-        // assert(0 <= i < 8)
-        if (i != 0){
-            bits |= ((u64)num)<<((i-1)*9);
-        }
-    }
-
     inline int rank1(int n){
         return BT[n/64] + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
     }
