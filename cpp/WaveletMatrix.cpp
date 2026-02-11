@@ -83,9 +83,196 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-c
+struct FullyIndexableDictionary{
+    using u64 = unsigned long long;
+    using u32 = unsigned int;
+
+    size_t sz,count;  // szはビット数、countはブロック数
+    bool is_builded;
+
+    vector<u64> data;  // 64bit区切りでデータを持っておく
+    vector<u32> BT;  // ブロックテーブル、各ブロックの先頭の rank を前計算する。
+    int popcount;
+
+    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count(sz/64+1), data(sz/64+1,0), BT(sz/64+1,0){};
+
+    void set(int i, bool b){
+        assert(!is_builded);
+        assert(0 <= i && i < sz);
+        if (b){ write1(i);} else { write0(i);}
+    }
+
+    void set(int i, char b){
+        assert(!is_builded);
+        assert(0 <= i && i < sz);
+        if (b=='0'){ write0(i);} else if (b == '1'){ write1(i);} else {assert(false);}
+    }
+
+    void set(int i, int b){
+        assert(!is_builded);
+        assert(0 <= i && i < sz);
+        if (b==0){ write0(i);} else if (b == 1){ write1(i);} else {assert(false);}
+    }
+
+    void set(int i, ll b){
+        assert(!is_builded);
+        assert(0 <= i && i < sz);
+        if (b==0){ write0(i);} else if (b == 1){ write1(i);} else {assert(false);}
+    }
+
+    bool test(int i){
+        assert(0 <= i && i < sz);
+        return ((data[i/64]>>(i&63))&1)==1;
+    }
+
+    void build(){
+        assert(!is_builded);
+        is_builded = true;
+        int rank_all = 0;
+        for (int i=0; i<count ;i++){
+            BT[i] =  rank_all;
+            rank_all += __builtin_popcountll(data[i]);
+        }
+        popcount = rank_all;
+    }
+
+    int rank(int n,int b){  // [0,n) までに含まれる b の個数
+        if (n == sz){return rank_all(b);}
+        assert(0 <= n && n < sz);
+        if (b == 0){
+            return n - rank1(n);
+        } else if (b == 1){
+            return rank1(n);
+        } else {
+            assert(false);
+        }
+    }
+
+    int select(int n,int b){  // rank(k) = n となる最小の k の値
+        assert(0 <= n && n < sz);
+        if (b == 0){
+            if (n < sz - popcount){
+                return select0(n);
+            } else {
+                return -1;
+            }
+        } else if (b == 1){
+            if (n < popcount){
+                return select1(n);
+            } else {
+                return -1;
+            }
+        } else {
+            assert(false);
+        }
+    }
+
+    int rank_all(int b){
+        if (b == 0){
+            return sz - popcount;
+        } else if (b == 1){
+            return popcount;
+        } else {
+            assert(false);
+        }
+    }
+
+    inline int operator[](int i) {
+        return test(i);
+    }
+
+    private:
+    inline void write1(int i){
+        data[i>>6] |= ((u64)1)<<(i&((1<<6)-1));
+    }
+
+    inline void write0(int i){
+        data[i>>6] &= ~(((u64)1)<<(i&((1<<6)-1)));
+    }
+
+    inline int read64(u64 bits, int i){
+        // assert(0 <= i < 8)
+        if (i == 0){
+            return 0;
+        } else {
+            return (bits>>((i-1)*9))&((1<<9)-1);
+        }
+    }
+
+    inline void write64(u64& bits, int num, int i){
+        // assert(0 <= i < 8)
+        if (i != 0){
+            bits |= ((u64)num)<<((i-1)*9);
+        }
+    }
+
+    inline int rank1(int n){
+        return BT[n/64] + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
+    }
+
+    int select1(int n){  // 二分探索、rank(k,1) <= n となる最大の k を返す
+        int ok_b = 0;
+        int ng_b = count;
+        int mid_b;
+        while (ng_b - ok_b > 1){
+            mid_b = (ok_b+ng_b)/2;
+            if (BT[mid_b] <= n){
+                ok_b = mid_b;
+            } else {
+                ng_b = mid_b;
+            }
+        }
+
+        int ok_d = 0;
+        int ng_d = 64;
+        int mid_d;
+        while (ng_d - ok_d > 1){
+            mid_d = (ok_d+ng_d)/2;
+            if (BT[ok_b] + __builtin_popcountll((data[ok_b] & ((((u64)1)<<(mid_d))-((u64)1)))) <= n){
+                ok_d = mid_d;
+            } else {
+                ng_d = mid_d;
+            }
+        }
+
+        return 64*ok_b + ok_d;
+    }
+
+    int select0(int n){  // 二分探索、rank(k,0) <= n となる最大の k を返す
+        int ok_b = 0;
+        int ng_b = count;
+        int mid_b;
+        while (ng_b - ok_b > 1){
+            mid_b = (ok_b+ng_b)/2;
+            if ((64*mid_b) - (BT[mid_b]) <= n){
+                ok_b = mid_b;
+            } else {
+                ng_b = mid_b;
+            }
+        }
+
+        int ok_d = 0;
+        int ng_d = 64;
+        int mid_d;
+        while (ng_d - ok_d > 1){
+            mid_d = (ok_d+ng_d)/2;
+            if ((64*ok_b + mid_d) - (BT[ok_b] + __builtin_popcountll((data[ok_b] & ((((u64)1)<<(mid_d))-((u64)1))))) <= n){
+                ok_d = mid_d;
+            } else {
+                ng_d = mid_d;
+            }
+        }
+
+        return 64*ok_b + ok_d;
+    }
+
+};
+
+
 template <typename T>
 struct WaveletMatrix{
+    // using T = ll;
+
     // このテンプレート関数に依存
     // unsigned int bit_length(int n){ return n > 0 ? 64 - __builtin_clz(n) : 0;}
     // unsigned int bit_length(ll n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
@@ -215,6 +402,10 @@ struct WaveletMatrix{
         return res; 
     }
 
+    int mex_(int l, int r){
+        return min(l != 0 ? range_kth_min(0,l,0) : sz, r != sz ? range_kth_min(r,sz,0) : sz);
+    }
+
 
     int rangefreq(int l,int r, T x, T y){
         assert(0 <= l && l <= r && r <= sz);
@@ -240,8 +431,8 @@ struct WaveletMatrix{
         } else {
             r0 = r;
             l0 = l;
-            r1 = 0;
-            l1 = 0;
+            r1 = sz;
+            l1 = sz;
         }
 
         for (int d=p-1;d >= 0;d--){
@@ -257,15 +448,24 @@ struct WaveletMatrix{
 
         for (int d=p-1;d >= 0;d--){
             c = (x>>d)&1;
-            if (c == 0 || d == 0){
+            if (c == 0){
                 ans += data[d].rank(r0,1) - data[d].rank(l0,1);
             }
             r0 = c*data[d].rank_all(0) + data[d].rank(r0,c);
             l0 = c*data[d].rank_all(0) + data[d].rank(l0,c);
         }
+
+        ans += (r0 - l0);
         return ans;
     }
-    
+
+    T predecessor(int l, int r, T v){ // 区間[l,r)に含まれる v 以上の最大の要素を返す。無ければ -1 を返す。
+
+    }
+
+    inline T operator[](int i) {
+        return access(i);
+    }
 
 
 };
@@ -273,23 +473,32 @@ struct WaveletMatrix{
 
 // ===============================================================================
 
+
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    int N,Q;
-    cin >> N >> Q;
-    vector<int> A(N);
-    vin(A);
+    int N;
+    cin >> N;
+    vector<int> B(N);
+    vin(B);
+    vdec(B);
 
-    WaveletMatrix<int> WM(A);
+    WaveletMatrix<int> WM(B);
 
-    int l,r,k;
-    rep(i,Q){
-        cin >> l >> r >> k;
-        cout << WM.range_kth_min(l,r,k) << "\n";
+    ll ans = 0;
+    int b;
+    ll x,y;
+    rep(i,N){
+        b = WM[i];
+        x = WM.rangefreq(0,i,0,b);
+        y = WM.rangefreq(i+1,N,0,b);
+        ans += (1+x)*(1+y);
     }
+
+    cout << ans << endl;
 }
+
 
 /*
 int main(){
@@ -394,6 +603,19 @@ int main(){
     cout << WM2.mex(0,10) << endl;
     cout << endl;
 
+    cout << WM2.mex_(0,0) << endl;
+    cout << WM2.mex_(0,1) << endl;
+    cout << WM2.mex_(0,2) << endl;
+    cout << WM2.mex_(0,3) << endl;
+    cout << WM2.mex_(0,4) << endl;
+    cout << WM2.mex_(0,5) << endl;
+    cout << WM2.mex_(0,6) << endl;
+    cout << WM2.mex_(0,7) << endl;
+    cout << WM2.mex_(0,8) << endl;
+    cout << WM2.mex_(0,9) << endl;
+    cout << WM2.mex_(0,10) << endl;
+    cout << endl;
+
     cout << WM2.mex(4,4) << endl;
     cout << WM2.mex(4,5) << endl;
     cout << WM2.mex(4,6) << endl;
@@ -406,5 +628,4 @@ int main(){
 
     cout << "end" << endl;
 }
-
 */
