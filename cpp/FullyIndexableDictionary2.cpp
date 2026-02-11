@@ -82,18 +82,20 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-struct FullyIndexableDictionary{
-    using u64 = unsigned long long;
+struct FullyIndexableDictionary_{
+    using u16 = unsigned short;
     using u32 = unsigned int;
+    using u64 = unsigned long long;
 
-    size_t sz,count;  // szはビット数、countはブロック数
+    size_t sz,count;  // szはビット数、countはチャンク数
     bool is_builded;
 
     vector<u64> data;  // 64bit区切りでデータを持っておく
-    vector<u32> BT;  // ブロックテーブル、各ブロックの先頭の rank を前計算する。
+    vector<u32> CT;  // チャンクテーブル、各チャンクの先頭の rank を前計算する。
+    vector<u64> BT;  // ブロックテーブル、各ブロックが所属するチャンクの始点からの rank を前計算する。u9 * 7 を u64を使い違法圧縮している。展開用関数を作らねば...
     int popcount;
 
-    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count(sz/64+1), data(sz/64+1,0), BT(sz/64+1,0){};
+    FullyIndexableDictionary_(size_t sz):is_builded(false), sz(sz), count(sz/512+1), data((sz/512+1)*8,0), CT((sz/512+1),0), BT((sz/512+1),0){};
 
     void set(int i, bool b){
         assert(!is_builded);
@@ -127,10 +129,17 @@ struct FullyIndexableDictionary{
     void build(){
         assert(!is_builded);
         is_builded = true;
+
         int rank_all = 0;
+        int rank_part = 0;
         for (int i=0; i<count ;i++){
-            BT[i] =  rank_all;
-            rank_all += __builtin_popcountll(data[i]);
+            CT[i] = rank_all;
+            rank_part = 0;
+            for (int j=0;j<8;j++){
+                write64(BT[i], rank_part, j);
+                rank_part += __builtin_popcountll(data[(i<<3)+j]);
+            }
+            rank_all += rank_part;
         }
         popcount = rank_all;
     }
@@ -206,16 +215,28 @@ struct FullyIndexableDictionary{
     }
 
     inline int rank1(int n){
-        return BT[n/64] + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
+        return CT[n/512] + read64(BT[n/512],(n&511)>>6) + __builtin_popcountll((data[n/64] & ((((u64)1)<<(n&63))-((u64)1))));
     }
 
     int select1(int n){  // 二分探索、rank(k,1) <= n となる最大の k を返す
+        int ok_c = 0;
+        int ng_c = count;
+        int mid_c;
+        while (ng_c - ok_c > 1){
+            mid_c = (ok_c+ng_c)/2;
+            if (CT[mid_c] <= n){
+                ok_c = mid_c;
+            } else {
+                ng_c = mid_c;
+            }
+        }
+
         int ok_b = 0;
-        int ng_b = count;
+        int ng_b = 8;
         int mid_b;
         while (ng_b - ok_b > 1){
             mid_b = (ok_b+ng_b)/2;
-            if (BT[mid_b] <= n){
+            if (CT[ok_c] + read64(BT[ok_c],mid_b) <= n){
                 ok_b = mid_b;
             } else {
                 ng_b = mid_b;
@@ -227,23 +248,36 @@ struct FullyIndexableDictionary{
         int mid_d;
         while (ng_d - ok_d > 1){
             mid_d = (ok_d+ng_d)/2;
-            if (BT[ok_b] + __builtin_popcountll((data[ok_b] & ((((u64)1)<<(mid_d))-((u64)1)))) <= n){
+            auto res = (data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)));
+            if (CT[ok_c] + read64(BT[ok_c],ok_b) + __builtin_popcountll((data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)))) <= n){
                 ok_d = mid_d;
             } else {
                 ng_d = mid_d;
             }
         }
 
-        return 64*ok_b + ok_d;
+        return 512*ok_c + 64*ok_b + ok_d;
     }
 
     int select0(int n){  // 二分探索、rank(k,0) <= n となる最大の k を返す
+        int ok_c = 0;
+        int ng_c = count;
+        int mid_c;
+        while (ng_c - ok_c > 1){
+            mid_c = (ok_c+ng_c)/2;
+            if ((512*mid_c) - (CT[mid_c]) <= n){
+                ok_c = mid_c;
+            } else {
+                ng_c = mid_c;
+            }
+        }
+
         int ok_b = 0;
-        int ng_b = count;
+        int ng_b = 8;
         int mid_b;
         while (ng_b - ok_b > 1){
             mid_b = (ok_b+ng_b)/2;
-            if ((64*mid_b) - (BT[mid_b]) <= n){
+            if ((512*ok_c + 64*mid_b) - (CT[ok_c] + read64(BT[ok_c],mid_b)) <= n){
                 ok_b = mid_b;
             } else {
                 ng_b = mid_b;
@@ -255,37 +289,36 @@ struct FullyIndexableDictionary{
         int mid_d;
         while (ng_d - ok_d > 1){
             mid_d = (ok_d+ng_d)/2;
-            if ((64*ok_b + mid_d) - (BT[ok_b] + __builtin_popcountll((data[ok_b] & ((((u64)1)<<(mid_d))-((u64)1))))) <= n){
+            auto res = (data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1)));
+            if ((512*ok_c + 64*ok_b + mid_d) - (CT[ok_c] + read64(BT[ok_c],ok_b) + __builtin_popcountll((data[8*ok_c+ok_b] & ((((u64)1)<<(mid_d))-((u64)1))))) <= n){
                 ok_d = mid_d;
             } else {
                 ng_d = mid_d;
             }
         }
 
-        return 64*ok_b + ok_d;
+        return 512*ok_c + 64*ok_b + ok_d;
     }
 
 };
 
 // ===============================================================================
 
-/*
 int main(){
  
-    FullyIndexableDictionary A(1000);
+    FullyIndexableDictionary_ A(1000000000);
 
     mt19937 gen(3);
     uniform_int_distribution<int> ui(0, 1);
-    uniform_int_distribution<int> ui2(0, 500);
-    for (ll i = 0; i < 1000; i++){
+    uniform_int_distribution<int> ui2(0, 5000000);
+    for (ll i = 0; i < 100000000; i++){
         if (ui(gen)) {A.set(i,1);} else {A.set(i,0);}
     }
     A.build();
  
  }
- */
 
-
+/*
 int main(){
 
     ios::sync_with_stdio(false);
@@ -378,3 +411,4 @@ int main(){
     cout << "end" << endl;
     
 }
+*/
