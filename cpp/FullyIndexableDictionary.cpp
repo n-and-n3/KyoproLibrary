@@ -95,7 +95,7 @@ struct FullyIndexableDictionary{
     vector<u64> BT;  // ブロックテーブル、各ブロックが所属するチャンクの始点からの rank を前計算する。u9 * 7 を u64を使い違法圧縮している。展開用関数を作らねば...
     int popcount;
 
-    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count((sz+511)/512), data(((sz+511)/512)*8,0), CT((sz+511)/512,0), BT((sz+511)/512,0){};
+    FullyIndexableDictionary(size_t sz):is_builded(false), sz(sz), count(sz/512+1), data((sz/512+1)*8,0), CT((sz/512+1),0), BT((sz/512+1),0){};
 
     void set(int i, bool b){
         assert(!is_builded);
@@ -145,7 +145,8 @@ struct FullyIndexableDictionary{
     }
 
     int rank(int n,int b){  // [0,n) までに含まれる b の個数
-        assert(0 <= n && n <= sz);
+        if (n == sz){return rank_all(b);}
+        assert(0 <= n && n < sz);
         if (b == 0){
             return n - rank1(n);
         } else if (b == 1){
@@ -182,6 +183,10 @@ struct FullyIndexableDictionary{
         } else {
             assert(false);
         }
+    }
+
+    inline int operator[](int i) {
+        return test(i);
     }
 
     private:
@@ -296,7 +301,6 @@ struct FullyIndexableDictionary{
     }
 
 };
-
 
 // ===============================================================================
 
