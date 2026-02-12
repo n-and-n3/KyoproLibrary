@@ -93,38 +93,91 @@ struct BinaryTrie{
 
     int d;
     Node* root;
-    BinaryTrie(int d):d(d){
+    ll world;
+    BinaryTrie(int d):d(d),world(0){
         root = new Node(nullptr, nullptr, 0);
     };
 
     bool find(ll x){
         assert(0 <= x <= (((ll)1)<<d)-((ll)1));
-        return _find(x);
+        return _find(x^world);
     }
 
     void insert(ll x){
         assert(0 <= x <= (((ll)1)<<d)-((ll)1));
-        if (!_find(x)){_insert(x);}
+        if (!_find(x^world)){_insert(x^world);}
     }
 
     void erase(ll x){
         assert(0 <= x <= (((ll)1)<<d)-((ll)1));
-        if (_find(x)){_erase(x);}
+        if (_find(x^world)){_erase(x^world);}
     }
 
-    ll min_xor(ll x){
+    void all_xor(ll x){
         assert(0 <= x <= (((ll)1)<<d)-((ll)1));
-        if (size() == 0){
-            return (ll)-1;
-        } else {
-            return _min_xor(x);
-        }
+        world ^= x;
     }
+
 
     size_t size(){
         return root->count;
     }
 
+    ll kth_min(int k){
+        Node* cur = root;
+        ll res = 0;
+        int c = 0;
+        for (int i = d-1; i >= 0; i--){
+            if ((world & (((ll)1)<<i)) == 0){
+                if (cur->zero != nullptr){
+                    c = cur->zero->count;
+                } else {
+                    c = 0;
+                }
+                if (c > k){
+                    cur = cur->zero;
+                    res = 2*res;
+                } else {
+                    k -= c;
+                    cur = cur->one;
+                    res = 2*res+1;
+                }
+            } else {
+                if (cur->one != nullptr){
+                    c = cur->one->count;
+                } else {
+                    c = 0;
+                }
+                if (c > k){
+                    cur = cur->one;
+                    res = 2*res;
+                } else {
+                    k -= c;
+                    cur = cur->zero;
+                    res = 2*res+1;
+                }
+            }
+        }
+        return res;
+    }
+
+    ll kth_max(int i){
+        return kth_min(size()-i-1);
+    }
+
+    ll min_xor(ll x){
+        all_xor(x);
+        ll ans = kth_min(0);
+        all_xor(x);
+        return ans;
+    }
+
+    ll max_xor(ll x){
+        all_xor(x);
+        ll ans = kth_max(0);
+        all_xor(x);
+        return ans;
+    }
 
     private:
     void _insert(ll x){
@@ -189,30 +242,7 @@ struct BinaryTrie{
     }
 
 
-    ll _min_xor(ll x){
-        Node* cur = root;
-        ll res = 0;
-        for (int i = d-1; i >= 0; i--){
-            if ((x & (((ll)1)<<i)) == 0){
-                if (cur->zero != nullptr && cur->zero->count > 0){
-                    cur = cur->zero;
-                    res = 2*res;
-                } else {
-                    cur = cur->one;
-                    res = 2*res+1;
-                }
-            } else {
-                if (cur->one != nullptr && cur->one->count > 0){
-                    cur = cur->one;
-                    res = 2*res;
-                } else {
-                    cur = cur->zero;
-                    res = 2*res+1;
-                }
-            }
-        }
-        return res;
-    }
+
 };
 
 
@@ -223,12 +253,12 @@ int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    BinaryTrie BT(4);
+    BinaryTrie BT(30);
 
     int Q;
     cin >> Q;
 
-    int t,x;
+    ll t,x;
     rep(i,Q){
         cin >> t >> x;
         if (t == 0){
@@ -236,7 +266,7 @@ int main(){
         } else if (t == 1){
             BT.erase(x);
         } else {
-            cout << BT.min_xor(x) << endl;
+            cout << BT.min_xor(x) << "\n";
         }
     }
 
