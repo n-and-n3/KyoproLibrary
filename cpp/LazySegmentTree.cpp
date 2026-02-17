@@ -164,14 +164,12 @@ struct LazySegmentTree{
                 int ri = r + N;
                 while (li < ri){
                     if (li&1){ // 必ず奇数ノードしか取らない
-                        data[li] = mapping(f,data[li]);
-                        lazy[li] = composition(f,lazy[li]);
+                        sub_propagate(f,li);
                         li += 1;
                     }
                     if (ri&1){ // 必ず偶数ノードしか取らない
                         ri -= 1;
-                        data[ri] = mapping(f,data[ri]);
-                        lazy[ri] = composition(f,lazy[ri]);
+                        sub_propagate(f,ri);
                     }
                     li >>= 1;
                     ri >>= 1;
@@ -194,11 +192,14 @@ struct LazySegmentTree{
             }
 
 
+            inline void sub_propagate(func f,int i){
+                lazy[i] = composition(f,lazy[i]);
+                data[i] = mapping(f,data[i]);
+            }
+
             void point_propagate(int i){ // i番目のノードの遅延情報を 2*i, 2*i+1 番目のノードに伝える
-                lazy[2*i] = composition(lazy[i],lazy[2*i]);
-                lazy[2*i+1] = composition(lazy[i],lazy[2*i+1]);
-                data[2*i] = mapping(lazy[i],data[2*i]);
-                data[2*i+1] = mapping(lazy[i],data[2*i+1]);
+                sub_propagate(lazy[i],2*i);
+                sub_propagate(lazy[i],2*i+1);
                 lazy[i] = id();
             }
 
@@ -261,6 +262,10 @@ namespace RSQ_RUQ{
     F id(){
         return {0,false};
     }
+
+    S gen(ll x){
+        return {x,1};
+    }
 }
 
 // Affine on ll
@@ -302,6 +307,10 @@ namespace Affinell{
     F id(){
         return {1,0};
     }
+
+    S gen(ll x){
+        return {x,x,x,1};
+    }
 }
 
 // Affine on mint
@@ -335,6 +344,10 @@ namespace Affinemint{
     F id(){
         return {1,0};
     }
+
+    S gen(int x){
+        return {x,1};
+    }
 }
 
 // ===============================================================================
@@ -351,7 +364,7 @@ int main(){
     ll tmp;
     rep(i,N){
         cin >> tmp;
-        vec[i] = {tmp,1};
+        vec[i] = Affinemint::gen(tmp);
     }
     LazySegmentTree<lsegtype(Affinemint)> LST(vec, lsegarg(Affinemint));
 
