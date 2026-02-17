@@ -153,7 +153,7 @@ struct LazySegmentTree{
                 return op(resL, resR);
             }
 
-            void apply(int l,int r, func f){
+            void apply(int l,int r, const func& f){
                 assert(0 <= l && l <= r && r <= sz);
                 // 必要な遅延の解消
                 line_propagate(l);
@@ -203,7 +203,7 @@ struct LazySegmentTree{
             }
 
             void line_propagate(int ind){ // index i のノード以上の部分の遅延を解消する
-                if (ind != sz){
+                if (ind != N){
                     ind += N;
                     for (int i=logN;i>0;i--){
                         point_propagate(ind>>i);
