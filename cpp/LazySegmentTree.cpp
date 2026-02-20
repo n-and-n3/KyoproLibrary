@@ -103,7 +103,7 @@ struct LazySegmentTree{
     int logN;
 
 
-    LazySegmentTree(vector<info> array,
+    LazySegmentTree(vector<info>& array,
             function<info(info,info)> op,
             function<info()> e,
             function<func(func,func)> composition,
@@ -153,7 +153,7 @@ struct LazySegmentTree{
                 return op(resL, resR);
             }
 
-            void apply(int l,int r, const func& f){
+            void apply(int l,int r, func f){
                 assert(0 <= l && l <= r && r <= sz);
                 // 必要な遅延の解消
                 line_propagate(l);
@@ -203,7 +203,7 @@ struct LazySegmentTree{
             }
 
             void line_propagate(int ind){ // index i のノード以上の部分の遅延を解消する
-                if (ind != N){
+                if (ind != sz){
                     ind += N;
                     for (int i=logN;i>0;i--){
                         point_propagate(ind>>i);
@@ -307,25 +307,25 @@ namespace Affinell{
 // Affine on mint
 namespace Affinemint{
     struct S{
-        mint sum;
+        int sum;
         int length;
     };
 
     struct F{
-        mint a;
-        mint b;
+        int a;
+        int b;
     };
 
     S op(S x,S y){
-        return {x.sum + y.sum, x.length + y.length};
+        return {(x.sum + y.sum)%998244353, x.length + y.length};
     }
 
     S mapping(F f, S x){
-        return {f.a*x.sum+f.b*x.length ,x.length};
+        return {(int)((((ll)f.a)*((ll)x.sum)+((ll)f.b)*((ll)x.length))%998244353) ,x.length};
     }
 
-    F comp(F f, F g){  // a(cx+d)+b = 
-        return {f.a*g.a, f.a*g.b+f.b};
+    F comp(F f, F g){  // a(cx+d)+b = ac x + ad+b
+        return {(int)((((ll)f.a)*((ll)g.a))%998244353), (int)((((ll)f.a)*((ll)g.b)+((ll)f.b))%998244353)};
     }
 
     S e(){
@@ -348,14 +348,14 @@ int main(){
     cin >> N >> Q;
 
     vector<Affinemint::S> vec(N);
-    ll tmp;
+    int tmp;
     rep(i,N){
         cin >> tmp;
         vec[i] = {tmp,1};
     }
     LazySegmentTree<lsegtype(Affinemint)> LST(vec, lsegarg(Affinemint));
 
-    ll t,l,r,b,c;
+    int t,l,r,b,c;
     rep(i,Q){
         cin >> t;
         if (t == 0){
