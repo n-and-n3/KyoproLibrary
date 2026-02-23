@@ -337,9 +337,109 @@ namespace Affinemint{
     }
 }
 
+// RangeAdd RangeDiv RangeMax Range Restore
+namespace ADD_DIV_MAX_RESTORE{
+
+    struct S{
+        ll max;
+        ll initial_max;
+        ll min;
+        ll initial_min;
+    };
+
+    struct F{
+        ll offset;
+        ll den;
+        ll add;
+        bool flag;
+
+    };
+
+    S op(S x, S y){
+        return {max(x.max,y.max),max(x.initial_max,y.initial_max),min(x.min,y.min),min(x.initial_min,y.initial_min)};
+    }
+
+    S e(){
+        return {0,0,0,0};
+    }
+
+
+    S mapping(F f,S x){
+        if (f.flag){
+            //cout << "Debug : " << x.max << " " << x.initial_max << " " << f.offset << " " << f.den << " " <<  f.add << " " << endl;
+            return {(x.initial_max+f.offset)/f.den+f.add,x.initial_max,(x.initial_min+f.offset)/f.den+f.add,x.initial_min};
+        } else {
+            // cout << "Debug : " << x.max << " " << f.offset << " " << f.den << " " <<  f.add << " " << endl;
+            return {(x.max+f.offset)/f.den+f.add,x.initial_max,(x.min+f.offset)/f.den+f.add,x.initial_min};
+        }
+    }
+
+    F comp(F g, F f){
+        ll A,B,C;
+        if (g.flag){
+            return {g.offset,g.den,g.add,true};
+        } else {
+            A = f.offset + f.den * ((f.add + g.offset) % g.den);
+            B = f.den * g.den;
+            C = g.add + (f.add + g.offset) / g.den;
+            if (B > pow10ll[9]){
+                A = max(A-(B-pow10ll[9]),0LL);
+                B = pow10ll[9];
+            }
+            // cout << f.offset << " " << f.den << " " << f.add << " " << f.flag << " " << g.offset <<  " " << g.den << " " << g.add << " : " << A << " " << B << " " << C << "\n";
+            return {A, B, C, f.flag};
+        }
+    }
+
+    F id(){return {0,1,0,false};}
+
+    S gen(ll a){
+        return {a,a,a,a};
+    }
+}
+
 // ===============================================================================
 
 
+int main(){
+    ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    ll N,Q;
+    cin >> N >> Q;
+
+    vector<ADD_DIV_MAX_RESTORE::S> A(N);
+    ll a;
+    rep(i,N){
+        cin >> a;
+        A[i] = {a,a,a,a};
+    }
+    
+    LazySegmentTree<lsegtype(ADD_DIV_MAX_RESTORE)> ST(A,lsegarg(ADD_DIV_MAX_RESTORE));
+    ll t,l,r,x;
+    ADD_DIV_MAX_RESTORE::S ans;
+
+    rep(i,Q){
+        cin >> t >> l >> r >> x;
+        if (t == 0){
+            ST.apply(l,r+1,{0,1,x,0});
+        } else if (t == 1){
+            ST.apply(l,r+1,{0,x,0,0});
+        } else if (t == 2){
+            ans = ST.prod(l,r+1);
+            cout << ans.max << endl;
+        } else if (t == 3){
+            ST.apply(l,r+1,{0,1,0,true});
+        } else if (t == 4){
+            ans = ST.prod(l,r+1);
+            cout << ans.min << endl;
+        }
+    }
+
+    return 0;
+}
+
+/*
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
@@ -367,7 +467,7 @@ int main(){
         }
     }
 }
-
+*/
 
 /*
 int main(){
