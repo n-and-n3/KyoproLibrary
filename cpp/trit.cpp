@@ -488,7 +488,13 @@ struct TIT {
 
     void write(trint ind, int x){
         int pre = get(ind);
-        for (int i=0;i<=count;i++){
+        int s = 0;
+        trint c = ind;
+        while(c[0] == 0){
+            c = c >> 1;
+            s++;
+        }
+        for (int i=s;i<=count;i++){
             table[(ind>>i)<<i] += x - pre;
         }
     }
