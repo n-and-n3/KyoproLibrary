@@ -400,6 +400,11 @@ struct devector{
         return devec.size();
     }
 
+    void assing(int s,int g,T value){
+        devec.assign(g-s+1, value);
+        offset = s;
+    }
+
 };
 
 // ==========================================================================
@@ -409,11 +414,14 @@ struct TIT {
     devector<ll> table;
     int _start;
     int _goal;
+    int count;
 
-    TIT(devector<int> array, int center) : _start(array.start()), _goal(array.goal()){
-        int N = max(0,array.start(),-array.goal());
+    TIT(devector<int> array) : _start(array.start()), _goal(array.goal()){
+        int N = 1;
+        chmax(N, -array.start());
+        chmax(N, array.goal());
         int tmp = 1;
-        int count = 1;
+        count = 1;
         while (tmp < N){
             tmp = 3*tmp+1;
             count += 1;
@@ -428,7 +436,9 @@ struct TIT {
             array.push_front(0);
         }
 
-        for (int i=0;i<count;i++){
+        table.assing(-N,N,0);
+
+        for (int i=0;i<=count;i++){
             if (i == 0){
                 for(int j=-N;j<=N;j++){
                     table[j] = array[j];
@@ -443,12 +453,12 @@ struct TIT {
     }
 
     int prod(trint l, trint r){
-        ll ans1 = 0;
-        ll ans2 = 0;
+        int ans1 = 0;
+        int ans2 = 0;
 
         trint t = 1;
 
-        for (int i = 0; r!=l && i<2;i++){
+        for (int i = 0; (r!=l && r != trint(0) && l !=  trint(0)) || i<count;i++){
             if (l[i] == 0){
                 l=l-t;
                 ans1 = ans1 + (-table[l]);
@@ -472,6 +482,16 @@ struct TIT {
         return ans1 + table[l] + ans2;
     }
 
+    int get(trint ind){
+        return prod(ind,ind);
+    }
+
+    void write(trint ind, int x){
+        int pre = get(ind);
+        for (int i=0;i<=count;i++){
+            table[(ind>>i)<<i] += x - pre;
+        }
+    }
 
     int start(){
         return _start;
@@ -492,9 +512,7 @@ int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    using Num = ll; 
-
-    devector<Num> arr(-4,4,0);
+    devector<int> arr(-4,4,0);
     arr[-4] = 1;
     arr[-3] = 2;
     arr[-2] = 3;
@@ -505,61 +523,19 @@ int main(){
     arr[3] = 8;
     arr[4] = 9;
 
-    devector<Num> table(-4,4,0);
-    for (int i=0;i<3;i++){
-        if (i == 0){
-            for(int j=-4;j<=4;j++){
-                table[j] = arr[j];
-            }
-        } else {
-            auto tmp = (trint(1)<<(i-1));
-            for (int j=((trint(-4)>>i)<<i);j<=((trint(4)<<i)>>i);j+=(trint(1)<<i)){
-                table[j] = table[j-tmp] + table[j] + table[j+tmp];
-            }
-        }
-    }
+    TIT TT(arr);
+    // arr = {1,2,3,4,5,6,7,8,9}
 
-    trint l,r;
-    l = 2;
-    r = 4;
+    cout << TT.prod(-3,3) << endl;
+    cout << TT.prod(0,0) << endl;
+    cout << TT.prod(0,4) << endl;
+    cout << TT.prod(-4,4) << endl;
 
-    Num cor = 0;
-    for(int i=l;i<=r;i++){
-        cor += arr[i];
-    }
-
-    cout << l << "\n";
-    cout << r << "\n";
-
-    Num ans1 = 0;
-    Num ans2 = 0;
-
-    trint t = 1;
-
-    for (int i = 0; r!=l && i<2;i++){
-        if (l[i] == 0){
-            l=l-t;
-            ans1 = ans1 + (-table[l]);
-        } else if (l[i] == 1){
-            ans1 = ans1 + table[l];
-            l=l+t;
-        }
-        l[i] = 0;
-
-        if (r[i] == 0){
-            r=r+t;
-            ans2 = (-table[r]) + ans2;
-        } else if (r[i] == -1){
-            ans2 = table[r] + ans2;
-            r=r-t;
-        }
-        r[i] = 0;
-        t = t * trint(3);
-    }
-
-    Num ans = ans1 + table[l] + ans2;
-    cout << ans << "\n";
-    cout << cor << "\n";
+    
+    cout << TT.prod(4,4) << endl;
+    TT.write(4,0);
+    // arr = {1,2,3,4,5,6,7,8,0}
+    cout << TT.prod(4,4) << endl;
 
 }
 
