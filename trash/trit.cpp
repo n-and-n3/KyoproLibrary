@@ -355,6 +355,7 @@ ostream &operator<<(ostream &os, const trint &i){ os << (string)i; return os;}
 
 // ===========================================================================
 
+
 // 座標を負の方向に伸ばせるvector、デキューのインデックスがズレていかないもの、と解釈できる
 template <typename T>
 struct devector{
@@ -363,6 +364,8 @@ struct devector{
 
     devector(){}
     devector(int start,int goal, T init_val) : devec(goal-start+1,init_val), offset(start){}
+    devector(initializer_list<T> list) : devec(list), offset(0){}
+    devector(initializer_list<T> list, int offset) : devec(list), offset(offset){}
 
     T& operator[] (int x){
         return devec[x-offset];
@@ -400,17 +403,16 @@ struct devector{
         return devec.size();
     }
 
-    void assing(int s,int g,T value){
+    void assign(int s,int g,T value){
         devec.assign(g-s+1, value);
         offset = s;
     }
 
 };
 
-// ==========================================================================
 
-// @brief TernaryIndexedTree
-struct TIT {
+
+struct TIT{
     devector<ll> table;
     int _start;
     int _goal;
@@ -436,7 +438,7 @@ struct TIT {
             array.push_front(0);
         }
 
-        table.assing(-N,N,0);
+        table.assign(-N,N,0);
 
         for (int i=0;i<=count;i++){
             if (i == 0){
