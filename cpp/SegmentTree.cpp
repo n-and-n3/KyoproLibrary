@@ -160,61 +160,32 @@ void print(vector<ll> A){
     }
 }
 
-
-struct DM{
-    int d;  // 左端を基準とした、右端の高さ
-    int m;  // 左端を基準とした、区間内の最小値
-    DM (int d_,int m_):d(d_), m(m_){};
-    DM (){};
-};
-
-DM op(DM x, DM y){
-    return {x.d + y.d, min(x.m, x.d + y.m)};
+ll op(ll x,ll y){
+  return x+y;
 }
 
-int inf = 1 << 28;
-
-DM e(){
-    return {0, inf};
+ll e(){
+  return 0LL;
 }
-
 
 int main(){
     int n,q,t,l,r;
-    DM res;
-    string S;
+    ll res;
 
     cin >> n >> q;
-    cin >> S;
 
 
-    vector<DM> array(n, {0, inf});
-    rep(i,n){array[i] = (S[i]=='(' ? DM(1,0) : DM(-1,-1));}
+    vector<ll> array(n);
+    vin(array);
     
-    auto ST = SegmentTree<DM>(array, op, e);
+    auto ST = SegmentTree<ll>(array, op, e);
 
-    rep(_,q){
+    rep(i,q){
         cin >> t >> l >> r;
-        if (t == 1){
-            l -= 1;
-            r -= 1;
-            DM tmp = ST[l];
-            ST[l] = ST[r];
-            ST[r] = tmp;
-            swap(S[l],S[r]);
-        } else if (t == 2){
-            l -= 1;
-            res = ST.prod(l, r);
-            cout << (res.d == 0 && res.m == 0 ? "Yes" : "No") << "\n";
+        if (t == 0){
+            ST[l] += r; 
+        } else {
+            cout << ST.prod(l, r) << "\n";
         }
     }
 }
-
-/*
-5 3
-(())(
-2 1 4
-1 1 4
-2 1 4
-
-*/

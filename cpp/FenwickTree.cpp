@@ -11,7 +11,6 @@
 #include <iomanip>
 #include <functional>
 #include <cassert>
-#include <initializer_list>
 #include <bit>
 #include <array>
 #include <atcoder/all>
@@ -45,7 +44,6 @@ using mint = modint998244353;
 #define lsegarg(name) name::op, name::e,name::comp, name::mapping, name::id
 
 vector<ll> pow2ll{1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576,2097152,4194304,8388608,16777216,33554432,67108864,134217728,268435456,536870912,1073741824,2147483648,4294967296,8589934592,17179869184,34359738368,68719476736,137438953472,274877906944,549755813888,1099511627776,2199023255552,4398046511104,8796093022208,17592186044416,35184372088832,70368744177664,140737488355328,281474976710656,562949953421312,1125899906842624,2251799813685248,4503599627370496,9007199254740992,18014398509481984,36028797018963968,72057594037927936,144115188075855872,288230376151711744,576460752303423488,1152921504606846976,2305843009213693952,4611686018427387904};
-vector<ll> pow3ll{1,3,9,};
 vector<ll> pow10ll{1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000,10000000000,100000000000,1000000000000,10000000000000,100000000000000,1000000000000000,10000000000000000,100000000000000000,1000000000000000000};
 vector<ll> di{0,1,0,-1};
 vector<ll> dj{1,0,-1,0};
@@ -86,92 +84,39 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-// ==========================================================================
-
-// @brief TernaryIndexedTree
 template <typename T>
-struct TIT {
+struct BIT
+{
     vector<T> array;
-    size_t sz;
-    TIT(initializer_list<T> init_list){
-        init(init_list.begin(), init_list.end());
-    }
+    size_t N;
 
-    TIT(const vector<T>& init_vec){
-        init(init_vec.begin(), init_vec.end());
-    }
-
-private:
-    template <class It>
-    void init(It first, It last){
-        // 冒頭に0を挿入したうえで初期化
-        array.clear();
-        array.push_back(0);
-        array.insert(array.end(), first, last);
-
-        // サイズを3の冪に
-        int tmp = 1;
-        while (tmp < (int)array.size()) {
-            tmp *= 3;
+    BIT(int N) : N(N), array(N+1,0){}
+    BIT(vector<T> data) : N(data.size()) , array(data.size()+1){
+        data.push_back(0);
+        for (int i=N-1;i>=0;i--){
+            data[i] += data[i+1];
         }
-        array.resize(tmp+1, 0); // 1-indexed なので +1 する
-        sz = array.size() - 1;
-
-        // テーブルの構築
-        int pos = 2;
-        int p = 1;
-        while (pos < (int)array.size()) {
-            for (int i = pos; i <= (int)sz; i+=3*p) {
-                array[i] += array[i - p];
-                array[i] += array[i + p];
-            }
-            pos = 3 * pos - 1;
-            p *= 3;
+        for (int i=1;i<=N;i++){
+            auto tmp = i-(i&(-i));
+            array[i] = data[i-(i&(-i))] - data[i];
         }
-    }
-
-public:
-
-    T sum(int ind){
-        T res = 0;
-        int p = 1;
-        while (ind > 0){
-            if (ind % 3 == 1){
-                res += array[ind*p - (p-1)/2];
-                ind -= 1;
-            } else if (ind % 3 == 2){
-                ind += 1;
-                res -= array[ind*p - (p-1)/2];
-            }
-            ind /= 3;
-            p *= 3;
-        }
-        return res;
-    }
-
-    T get(int ind){
-        return sum(ind) - sum(ind-1);
     }
 
     void add(int ind, T x){
-        int p = 1;
-        while (ind*p <= sz){
-            if (ind % 3 != 2){
-                array[ind*p - (p-1)/2] += x;
-            }
-            ind = (ind-1)/3+1;
-            p *= 3;
+        while (ind <= N){
+            array[ind] += x;
+            ind += ind & (-ind);
         }
     }
 
-    void write(int ind, T x){
-        add(ind, x - get(ind));
+    T sum(int ind){
+        T res = 0;
+        while (ind > 0){
+            res += array[ind];
+            ind -= ind & (-ind);
+        }
+        return res;
     }
-
-    size_t size(){
-        return sz;
-    }
-
 
 };
 
@@ -186,15 +131,38 @@ int main(){
     cin >> N >> Q;
     vector<ll> A(N);
     vin(A);
-    TIT<ll> tit(A);
+    BIT<ll> ft(A);
 
     int t,x,y;
     rep(i,Q){
         cin >> t >> x >> y;
         if (t == 0){
-            tit.add(x+1,y);
+            ft.add(x+1,y);
         } else {
-            cout << tit.sum(y) - tit.sum(x) << endl;
+            cout << ft.sum(y) - ft.sum(x) << endl;
         }
     }
 }
+
+
+/*
+# BIT
+# https://atcoder.jp/contests/practice2/submissions/69400835
+
+class BIT:
+  def __init__(self,N):   # 1-indexed
+    self.array = [0]*(N+1)
+    self.N = N
+  
+  def add(self,i,x):
+    while i <= self.N:
+      self.array[i] += x
+      i += i&(-i)
+    
+  def sum(self,i):
+    s = 0
+    while i > 0:
+      s += self.array[i]
+      i -= i&(-i)
+    return s
+*/    
