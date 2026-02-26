@@ -97,7 +97,6 @@ struct BIT
             data[i] += data[i+1];
         }
         for (int i=1;i<=N;i++){
-            auto tmp = i-(i&(-i));
             array[i] = data[i&(i-1)] - data[i];
         }
     }
