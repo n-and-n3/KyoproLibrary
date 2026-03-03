@@ -173,6 +173,12 @@ struct UnionFind{
         return res;
     }
 
+    void push_back(){
+        parent.push_back(-1);
+        next_v.push_back(next_v.size());
+        c += 1;
+    }
+
     void print(){
       cout << "{";
         for (int i = 0; i < parent.size(); i++){
