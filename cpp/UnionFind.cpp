@@ -173,7 +173,7 @@ struct UnionFind{
         return res;
     }
 
-    void push_back(){
+    void push(){
         parent.push_back(-1);
         next_v.push_back(next_v.size());
         c += 1;
