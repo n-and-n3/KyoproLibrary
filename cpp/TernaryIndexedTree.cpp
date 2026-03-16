@@ -109,10 +109,10 @@ private:
         array.push_back(0);
         array.insert(array.end(), first, last); // 元の配列を代入
 
-        // サイズを3の冪に
+        // サイズを (3^k-1)/2 型 にする。3の累乗でもいいけど、平衡三進数的にはこれが自然。
         int tmp = 1;
         while (tmp < (int)array.size()) {
-            tmp *= 3;
+            tmp = 3*tmp+1;
         }
         array.resize(tmp+1, 0); // 1-indexed なので +1 する
         sz = array.size() - 1;
@@ -132,7 +132,7 @@ private:
 
 public:
 
-    T sum(int ind){
+    T cum(int ind){
         T res = 0;
         int p = 1;
         while (ind > 0){
@@ -150,7 +150,7 @@ public:
     }
 
     T get(int ind){
-        return sum(ind) - sum(ind-1);
+        return cum(ind) - cum(ind-1);
     }
 
     void add(int ind, T x){
@@ -194,7 +194,7 @@ int main(){
         if (t == 0){
             tit.add(x+1,y);
         } else {
-            cout << tit.sum(y) - tit.sum(x) << endl;
+            cout << tit.cum(y) - tit.cum(x) << endl;
         }
     }
 }
