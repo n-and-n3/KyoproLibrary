@@ -107,7 +107,7 @@ private:
         // 冒頭に0を挿入したうえで初期化
         array.clear();
         array.push_back(0);
-        array.insert(array.end(), first, last);
+        array.insert(array.end(), first, last); // 元の配列を代入
 
         // サイズを3の冪に
         int tmp = 1;
