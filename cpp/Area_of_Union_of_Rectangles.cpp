@@ -43,7 +43,6 @@ using mint = modint998244353;
 #define lsegtype(name) name::S, name::F
 #define lsegarg(name) name::op, name::e,name::comp, name::mapping, name::id
 
-
 vector<ll> pow2ll{1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576,2097152,4194304,8388608,16777216,33554432,67108864,134217728,268435456,536870912,1073741824,2147483648,4294967296,8589934592,17179869184,34359738368,68719476736,137438953472,274877906944,549755813888,1099511627776,2199023255552,4398046511104,8796093022208,17592186044416,35184372088832,70368744177664,140737488355328,281474976710656,562949953421312,1125899906842624,2251799813685248,4503599627370496,9007199254740992,18014398509481984,36028797018963968,72057594037927936,144115188075855872,288230376151711744,576460752303423488,1152921504606846976,2305843009213693952,4611686018427387904};
 vector<ll> pow10ll{1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000,10000000000,100000000000,1000000000000,10000000000000,100000000000000,1000000000000000,10000000000000000,100000000000000000,1000000000000000000};
 vector<ll> di{0,1,0,-1};
@@ -84,9 +83,7 @@ ll powll(ll a, ll n, ll m){
     }
     return (ll)ans;
 }
-
-// ===============================================================================
-  
+// ===============================================================
 
 template <typename info, typename func>
 struct LazySegmentTree{
@@ -156,7 +153,7 @@ struct LazySegmentTree{
             inline info prod_all(){
                 return data[1];
             }
-            
+
             void apply(int l,int r, func f){
                 assert(0 <= l && l <= r && r <= sz);
                 // 必要な遅延の解消
@@ -223,322 +220,86 @@ struct LazySegmentTree{
 
 };
 
-// RUQ + RSQ on ll
-namespace RSQ_RUQ{
-    struct S
-    {
-        ll value;
-        ll length;
-    };
 
-    struct F{
-        ll num;
-        bool iswrited;
-    };
 
-    S op(S a,S b){
-        return {a.value + b.value,a.length + b.length};
-    }
-
-    F comp(F f, F g){  // f○gを返す
-        if (f.iswrited){
-            return {f.num,true};
-        } else if (g.iswrited){
-            return {g.num,true};
-        } else {
-            return {0,false};
-        }
-    }
-
-    S mapping(F f, S x){
-        if (f.iswrited){
-            return {f.num*x.length, x.length};
-        } else {
-            return {x.value,x.length};
-        }
-    }
-
-    S e(){
-        return {0,0};
-    }
-
-    F id(){
-        return {0,false};
+pair<int,int> op(pair<int,int> x,pair<int,int> y){
+    if (x.first < y.first){
+        return {x.first, x.second};
+    } else if (x.first > y.first){
+        return {y.first, y.second};
+    } else {
+        return {x.first, x.second + y.second};
     }
 }
 
-// Affine on ll
-namespace Affinell{
-    ll infinity = (1LL<<51);
-
-    struct S{
-        ll sum;
-        ll min;
-        ll max;
-        ll length;
-    };
-
-    struct F{
-        ll a;
-        ll b;
-    };
-
-    S op(S x,S y){
-        return {x.sum + y.sum, min(x.min, y.min), max(x.max, y.max), x.length + y.length};
-    }
-
-    S mapping(F f, S x){
-        if (f.a >= 0){
-            return {f.a*x.sum+f.b*x.length ,f.a*x.min+f.b ,f.a*x.max+f.b, x.length};
-        } else {
-            return {f.a*x.sum+f.b*x.length ,f.a*x.max+f.b ,f.a*x.min+f.b ,x.length};
-        }
-    }
-
-    F comp(F f, F g){  // a(cx+d)+b = 
-        return {f.a*g.a, f.a*g.b+f.b};
-    }
-
-    S e(){
-        return {0,infinity,-infinity,0};
-    }
-
-    F id(){
-        return {1,0};
-    }
+int comp(int f,int g){
+    return f + g;
 }
 
-// Affine on mint
-namespace Affinemint{
-    struct S{
-        int sum;
-        int length;
-    };
-
-    struct F{
-        int a;
-        int b;
-    };
-
-    S op(S x,S y){
-        return {(x.sum + y.sum)%998244353, x.length + y.length};
-    }
-
-    S mapping(F f, S x){
-        return {(int)((((ll)f.a)*((ll)x.sum)+((ll)f.b)*((ll)x.length))%998244353) ,x.length};
-    }
-
-    F comp(F f, F g){  // a(cx+d)+b = ac x + ad+b
-        return {(int)((((ll)f.a)*((ll)g.a))%998244353), (int)((((ll)f.a)*((ll)g.b)+((ll)f.b))%998244353)};
-    }
-
-    S e(){
-        return {0,0};
-    }
-
-    F id(){
-        return {1,0};
-    }
+pair<int,int> mapping(int f, pair<int,int> x){
+    return {x.first + f, x.second};
 }
 
-// RangeAdd RangeDiv RangeMax Range Restore
-namespace ADD_DIV_MAX_RESTORE{
-
-    struct S{
-        ll max;
-        ll initial_max;
-        ll min;
-        ll initial_min;
-    };
-
-    struct F{
-        ll offset;
-        ll den;
-        ll add;
-        bool flag;
-
-    };
-
-    S op(S x, S y){
-        return {max(x.max,y.max),max(x.initial_max,y.initial_max),min(x.min,y.min),min(x.initial_min,y.initial_min)};
-    }
-
-    S e(){
-        return {0,0,0,0};
-    }
-
-
-    S mapping(F f,S x){
-        if (f.flag){
-            //cout << "Debug : " << x.max << " " << x.initial_max << " " << f.offset << " " << f.den << " " <<  f.add << " " << endl;
-            return {(x.initial_max+f.offset)/f.den+f.add,x.initial_max,(x.initial_min+f.offset)/f.den+f.add,x.initial_min};
-        } else {
-            // cout << "Debug : " << x.max << " " << f.offset << " " << f.den << " " <<  f.add << " " << endl;
-            return {(x.max+f.offset)/f.den+f.add,x.initial_max,(x.min+f.offset)/f.den+f.add,x.initial_min};
-        }
-    }
-
-    F comp(F g, F f){
-        ll A,B,C;
-        if (g.flag){
-            return {g.offset,g.den,g.add,true};
-        } else {
-            A = f.offset + f.den * ((f.add + g.offset) % g.den);
-            B = f.den * g.den;
-            C = g.add + (f.add + g.offset) / g.den;
-            if (B > pow10ll[9]){
-                A = max(A-(B-pow10ll[9]),0LL);
-                B = pow10ll[9];
-            }
-            // cout << f.offset << " " << f.den << " " << f.add << " " << f.flag << " " << g.offset <<  " " << g.den << " " << g.add << " : " << A << " " << B << " " << C << "\n";
-            return {A, B, C, f.flag};
-        }
-    }
-
-    F id(){return {0,1,0,false};}
-
-    S gen(ll a){
-        return {a,a,a,a};
-    }
-}
-
-// ===============================================================================
-
-
-int main(){
-    ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-
-    ll N,Q;
-    cin >> N >> Q;
-
-    vector<ADD_DIV_MAX_RESTORE::S> A(N);
-    ll a;
-    rep(i,N){
-        cin >> a;
-        A[i] = {a,a,a,a};
-    }
-    
-    LazySegmentTree<lsegtype(ADD_DIV_MAX_RESTORE)> ST(A,lsegarg(ADD_DIV_MAX_RESTORE));
-    ll t,l,r,x;
-    ADD_DIV_MAX_RESTORE::S ans;
-
-    rep(i,Q){
-        cin >> t >> l >> r >> x;
-        if (t == 0){
-            ST.apply(l,r+1,{0,1,x,0});
-        } else if (t == 1){
-            ST.apply(l,r+1,{0,x,0,0});
-        } else if (t == 2){
-            ans = ST.prod(l,r+1);
-            cout << ans.max << endl;
-        } else if (t == 3){
-            ST.apply(l,r+1,{0,1,0,true});
-        } else if (t == 4){
-            ans = ST.prod(l,r+1);
-            cout << ans.min << endl;
-        }
-    }
-
+int id(){
     return 0;
 }
 
-/*
+pair<int,int> e(){
+    return {1<<30,0};
+}
+
+
+// ================================================================
+
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    ll N,Q;
-    cin >> N >> Q;
+    int N;
+    cin >> N;
 
-    vector<Affinemint::S> vec(N);
-    int tmp;
+
+    vector<array<int,4>> vec;
+    vec.reserve(2*N);
+    int x1,y1,x2,y2;
+    vector<int> val;
     rep(i,N){
-        cin >> tmp;
-        vec[i] = {tmp,1};
+        cin >> x1 >> y1 >> x2 >> y2;
+        vec.push_back({y1,x1,x2,1});
+        vec.push_back({y2,x1,x2,-1});
+        val.push_back(x1);
+        val.push_back(x2);
     }
-    LazySegmentTree<lsegtype(Affinemint)> LST(vec, lsegarg(Affinemint));
 
-    int t,l,r,b,c;
-    rep(i,Q){
-        cin >> t;
-        if (t == 0){
-            cin >> l >> r >> b >> c;
-            LST.apply(l,r,{b,c});
+    sort(vall(vec));
+    sort(vall(val));
+    val.erase(unique(val.begin(), val.end()), val.end());
+
+    ll X = val[val.size()-1] - val[0];
+    vector<pair<int,int>> array;
+    array.reserve(val.size()-1);
+    rep(i,val.size()-1){
+        array.push_back({0 ,val[i+1] - val[i]});
+    }
+
+    LazySegmentTree<pair<int,int>,int> LST(array, op, e, comp, mapping, id);
+
+    ll ans = 0;
+    int pret = 0;
+
+    rep(i, 2*N){
+        auto [t,l,r,c] = vec[i];
+        auto res = LST.prod_all();
+        if (res.first == 0){
+            ans += ((ll)(t - pret)) * (X - (ll)res.second);
         } else {
-            cin >> l >> r;
-            cout << LST.prod(l,r).sum << "\n";
+            ans += ((ll)(t - pret)) * X;
         }
+        pret = t;
+        l = lower_bound(val.begin(), val.end(), l) - val.begin();
+        r = lower_bound(val.begin(), val.end(), r) - val.begin();
+        LST.apply((int)l,(int)r,c);
     }
+
+    cout << ans << "\n";
 }
-*/
-
-/*
-int main(){
-    ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-
-    vector<RSQ_RUQ::S> vec = {{0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1}};
-    LazySegmentTree<lsegtype(RSQ_RUQ)> LST(vec, lsegarg(RSQ_RUQ));
-
-    cout << LST.get(-7).value << endl;
-    cout << endl;
-    cout << LST.get(-6).value << endl;
-    cout << LST.get(-5).value << endl;
-    cout << endl;
-    cout << LST.get(-4).value << endl;
-    cout << LST.get(-3).value << endl;
-    cout << LST.get(-2).value << endl;
-    cout << LST.get(-1).value << endl;
-    cout << endl;
-    cout << LST.get(0).value << endl;
-    cout << LST.get(1).value << endl;
-    cout << LST.get(2).value << endl;
-    cout << LST.get(3).value << endl;
-    cout << LST.get(4).value << endl;
-    cout << LST.get(5).value << endl;
-    cout << LST.get(6).value << endl;
-    cout << LST.get(7).value << endl;
-    cout << endl;
-    cout << endl;
-    cout << LST.prod(0,3).value << endl;
-    cout << LST.prod(1,4).value << endl;
-    cout << LST.prod(2,5).value << endl;
-    cout << endl;
-    cout << endl;
-    cout << LST.prod(0,3).value << endl;
-    cout << LST.prod(1,4).value << endl;
-    cout << LST.prod(2,5).value << endl;
-    cout << endl;
-    cout << endl;
-    LST.apply(0,3,{100,true});
-    cout << endl;
-    cout << endl;
-    cout << LST.get(0).value << endl;
-    cout << LST.get(1).value << endl;
-    cout << LST.get(2).value << endl;
-    cout << LST.get(3).value << endl;
-    cout << LST.get(4).value << endl;
-    cout << LST.get(5).value << endl;
-    cout << LST.get(6).value << endl;
-    cout << LST.get(7).value << endl;
-    cout << endl;
-    LST.apply(4,6,{200,true});
-    LST.apply(5,8,{300,true});
-    cout << endl;
-    cout << endl;
-    cout << LST.get(0).value << endl;
-    cout << LST.get(1).value << endl;
-    cout << LST.get(2).value << endl;
-    cout << LST.get(3).value << endl;
-    cout << LST.get(4).value << endl;
-    cout << LST.get(5).value << endl;
-    cout << LST.get(6).value << endl;
-    cout << LST.get(7).value << endl;
-
-
-    
-}
-
-*/
-
