@@ -100,6 +100,7 @@ struct LazySegmentTree{
     int logN;
 
 
+    LazySegmentTree() = default;
     LazySegmentTree(vector<info>& array,
             function<info(info,info)> op,
             function<info()> e,
@@ -222,31 +223,91 @@ struct LazySegmentTree{
 
 
 
-pair<int,int> op(pair<int,int> x,pair<int,int> y){
-    if (x.first < y.first){
-        return {x.first, x.second};
-    } else if (x.first > y.first){
-        return {y.first, y.second};
-    } else {
-        return {x.first, x.second + y.second};
+
+struct AreaOfUnionOfRectangles{
+    static pair<int,int> op(pair<int,int> x,pair<int,int> y){
+        if (x.first < y.first){
+            return {x.first, x.second};
+        } else if (x.first > y.first){
+            return {y.first, y.second};
+        } else {
+            return {x.first, x.second + y.second};
+        }
     }
-}
 
-int comp(int f,int g){
-    return f + g;
-}
+    static int comp(int f,int g){
+        return f + g;
+    }
 
-pair<int,int> mapping(int f, pair<int,int> x){
-    return {x.first + f, x.second};
-}
+    static pair<int,int> mapping(int f, pair<int,int> x){
+        return {x.first + f, x.second};
+    }
 
-int id(){
-    return 0;
-}
+    static int id(){
+        return 0;
+    }
 
-pair<int,int> e(){
-    return {1<<30,0};
-}
+    static pair<int,int> e(){
+        return {1<<30,0};
+    }
+
+    vector<array<int,4>> data;
+    vector<array<int,4>> vec;
+    vector<int> val;
+    LazySegmentTree<pair<int,int>,int> LST;
+
+    AreaOfUnionOfRectangles() = default;
+    AreaOfUnionOfRectangles(vector<array<int,4>> _data) : data(_data) {}
+
+    void push(array<int,4> a){
+        data.push_back(a);
+    }
+
+    ll solve(){
+        vec.reserve(2*data.size());
+        val.reserve(2*data.size());
+        for(const auto& a : data){
+            auto [x1,y1,x2,y2] = a;
+            vec.push_back({y1,x1,x2,1});
+            vec.push_back({y2,x1,x2,-1});
+            val.push_back(x1);
+            val.push_back(x2);
+        }
+
+        sort(vall(vec));
+        sort(vall(val));
+        val.erase(unique(val.begin(), val.end()), val.end());
+
+        ll X = val[val.size()-1] - val[0];
+        vector<pair<int,int>> array;
+        array.reserve(val.size()-1);
+        for(int i = 0;i < val.size()-1;i++){
+            array.push_back({0 ,val[i+1] - val[i]});
+        }
+
+        LST = LazySegmentTree<pair<int,int>,int>(array, op, e, comp, mapping, id);
+
+        ll ans = 0;
+        int pret = 0;
+
+        for(int i = 0;i < vec.size();i++){
+            auto [t,l,r,c] = vec[i];
+            auto res = LST.prod_all();
+            if (res.first == 0){
+                ans += ((ll)(t - pret)) * (X - (ll)res.second);
+            } else {
+                ans += ((ll)(t - pret)) * X;
+            }
+            pret = t;
+            l = lower_bound(val.begin(), val.end(), l) - val.begin();
+            r = lower_bound(val.begin(), val.end(), r) - val.begin();
+            LST.apply((int)l,(int)r,c);
+        }
+
+        return ans;
+    }
+
+};
 
 
 // ================================================================
@@ -258,48 +319,12 @@ int main(){
     int N;
     cin >> N;
 
-
-    vector<array<int,4>> vec;
-    vec.reserve(2*N);
-    int x1,y1,x2,y2;
-    vector<int> val;
+    AreaOfUnionOfRectangles AOUR;
     rep(i,N){
+        int x1,y1,x2,y2;
         cin >> x1 >> y1 >> x2 >> y2;
-        vec.push_back({y1,x1,x2,1});
-        vec.push_back({y2,x1,x2,-1});
-        val.push_back(x1);
-        val.push_back(x2);
+        AOUR.push({x1,y1,x2,y2});
     }
 
-    sort(vall(vec));
-    sort(vall(val));
-    val.erase(unique(val.begin(), val.end()), val.end());
-
-    ll X = val[val.size()-1] - val[0];
-    vector<pair<int,int>> array;
-    array.reserve(val.size()-1);
-    rep(i,val.size()-1){
-        array.push_back({0 ,val[i+1] - val[i]});
-    }
-
-    LazySegmentTree<pair<int,int>,int> LST(array, op, e, comp, mapping, id);
-
-    ll ans = 0;
-    int pret = 0;
-
-    rep(i, 2*N){
-        auto [t,l,r,c] = vec[i];
-        auto res = LST.prod_all();
-        if (res.first == 0){
-            ans += ((ll)(t - pret)) * (X - (ll)res.second);
-        } else {
-            ans += ((ll)(t - pret)) * X;
-        }
-        pret = t;
-        l = lower_bound(val.begin(), val.end(), l) - val.begin();
-        r = lower_bound(val.begin(), val.end(), r) - val.begin();
-        LST.apply((int)l,(int)r,c);
-    }
-
-    cout << ans << "\n";
+    cout << AOUR.solve() << "\n";
 }

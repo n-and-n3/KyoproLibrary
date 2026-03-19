@@ -40,6 +40,8 @@ using mint = modint998244353;
 #define vdec(A) for (auto &vvvv : (A)){vvvv--;}
 #define graphin0(C, M) int aaaa,bbbb;for (int iiii = 0; iiii < (M); iiii++){cin >> aaaa >> bbbb; (C)[aaaa].push_back(bbbb); (C)[bbbb].push_back(aaaa);}
 #define graphin1(C, M) int aaaa,bbbb;for (int iiii = 0; iiii < (M); iiii++){cin >> aaaa >> bbbb; (C)[aaaa-1].push_back(bbbb-1); (C)[bbbb-1].push_back(aaaa-1);}
+#define lsegtype(name) name::S, name::F
+#define lsegarg(name) name::op, name::e,name::comp, name::mapping, name::id
 
 vector<ll> pow2ll{1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576,2097152,4194304,8388608,16777216,33554432,67108864,134217728,268435456,536870912,1073741824,2147483648,4294967296,8589934592,17179869184,34359738368,68719476736,137438953472,274877906944,549755813888,1099511627776,2199023255552,4398046511104,8796093022208,17592186044416,35184372088832,70368744177664,140737488355328,281474976710656,562949953421312,1125899906842624,2251799813685248,4503599627370496,9007199254740992,18014398509481984,36028797018963968,72057594037927936,144115188075855872,288230376151711744,576460752303423488,1152921504606846976,2305843009213693952,4611686018427387904};
 vector<ll> pow10ll{1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000,10000000000,100000000000,1000000000000,10000000000000,100000000000000,1000000000000000,10000000000000000,100000000000000000,1000000000000000000};
@@ -82,101 +84,34 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-template <typename T>
-struct FoldableQueue{
-    vector<T> tail_stack;
-    vector<T> front_stack;
+// ==========================================================
 
-    FoldableQueue(){};
-
-    T front(){
-        assert(size() > 0);
-        if (check()){
-            normalized();
-        }
-        return front_stack.back();
+bool isprime_slow(ll n){
+    if (n % 2 == 0){
+        return false;
     }
-
-    T front_or(T default_value){
-        if (empty()){
-            return default_value;
-        }
-        if (check()){
-            normalized();
-        }
-        return front_stack.back();
-    }
-
-    void push_back(T x) {
-        tail_stack.push_back(x);
-    }
-
-    void pop_front_safe(){
-        if (!empty()){
-            if (check()){
-                normalized();
-            }
-            front_stack.pop_back();
+    for(ll p=3;p*p<=n;p+=2){
+        if (n % p == 0){
+            return false;
         }
     }
+    return true;
+}
 
-    void pop_front(){
-        assert(!empty());
-        if (check()){
-            normalized();
-        }
-        front_stack.pop_back();
-    }
+bool Miller_Rabin_test(ll n,ll a){
+    
 
-    size_t size(){
-        return front_stack.size() + tail_stack.size();
-    }
+}
 
-    bool empty(){
-        return size() == 0;
-    }
+bool isprime(){
+    
+}
 
-    private:
-    bool check(){
-        return front_stack.size() == 0;
-    }
-
-    void normalized(){
-        size_t sz = tail_stack.size();
-        for(int i =0;i<sz;i++){
-            front_stack.push_back(tail_stack.back());
-            tail_stack.pop_back();
-        }
-    }
-
-
-
-
-};
 
 // ===============================================================================
 
 int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
-
-    FoldableQueue<int> FQ;
-
-    FQ.push_back(0);
-    FQ.push_back(1);
-    FQ.push_back(2);
-    FQ.push_back(3);
-
-
-    cout << FQ.front() << endl;
-    cout << FQ.front() << endl;
     
-    FQ.pop_front();
-    cout << FQ.front() << endl;
-    FQ.pop_front();
-    cout << FQ.front() << endl;
-    FQ.pop_front();
-    cout << FQ.front() << endl;
-    FQ.pop_front();
-    cout << FQ.front_or(-114514) << endl;
 }

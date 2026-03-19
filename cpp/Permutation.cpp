@@ -171,7 +171,6 @@ struct Permutation
     }
 };
 
-
 Permutation pow(Permutation P,ll K){
     vector<int> ans(P.size(),-1);
     vector<vector<int>> cycles = P.divided_cycles();

@@ -83,8 +83,7 @@ ll powll(ll a, ll n, ll m){
 }
 
 
-constexpr size_t BinaryTree_universe = (1<<24);
-
+template <size_t BinaryTree_universe>
 struct BinaryTreeSet{
     bitset<2*BinaryTree_universe> array;
     int sz;
@@ -166,6 +165,7 @@ struct BinaryTreeSet{
         }
     }
 }; 
+
 // ===============================================================================
 
 int main(){
@@ -177,7 +177,7 @@ int main(){
 
     string T;
     cin >> T;
-    BinaryTreeSet S(T);
+    BinaryTreeSet<1<<24> S(T);
 
     int c,k;
     rep(i,Q){

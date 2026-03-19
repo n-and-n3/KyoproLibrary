@@ -204,7 +204,7 @@ struct PartiallyPersistentArray {
     size_t sz;
 
     // 通常定義用 1
-    PartiallyPersistentArray<T>(vector<T> array){
+    PartiallyPersistentArray(vector<T> array){
         Data* new_data = new Data{array};
         this->data = new_data;
         this->is_original = true;
@@ -213,7 +213,7 @@ struct PartiallyPersistentArray {
     }
 
     // 通常定義用 2
-    PartiallyPersistentArray<T>(int N){
+    PartiallyPersistentArray(int N){
         Data* new_data = new Data{vector<T>(N)};
         this->data = new_data;
         this->is_original = true;
@@ -222,7 +222,7 @@ struct PartiallyPersistentArray {
     }
 
     // 通常定義用 3
-    PartiallyPersistentArray<T>(int N, T initial){
+    PartiallyPersistentArray(int N, T initial){
         Data* new_data = new Data{vector<T>(N,initial)};
         this->data = new_data;
         this->is_original = true;
@@ -231,7 +231,7 @@ struct PartiallyPersistentArray {
     }
 
     // リスト初期化用
-    PartiallyPersistentArray<T>(initializer_list<T> init): PartiallyPersistentArray<T>(vector<T>(init)) {}
+    PartiallyPersistentArray(initializer_list<T> init): PartiallyPersistentArray<T>(vector<T>(init)) {}
 
 
 
@@ -269,7 +269,7 @@ struct PartiallyPersistentArray {
 
     // コピー用
     private:
-    PartiallyPersistentArray<T>(const PartiallyPersistentArray<T>* ppa){
+    PartiallyPersistentArray(const PartiallyPersistentArray<T>* ppa){
         this->data = ppa->data;
         this->is_original = false;
         this->version = ppa->version;
