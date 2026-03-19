@@ -1629,7 +1629,7 @@ namespace n3{
 
     }
 
-    namespace typical{
+    namespace typical_ds{
 
         struct UnionFind{
             vector<int> parent;
