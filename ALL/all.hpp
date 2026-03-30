@@ -135,7 +135,7 @@ namespace n3{
                 return res;
             }
 
-};
+        };
 
         // @brief TernaryIndexedTree
         template <typename T>
@@ -223,7 +223,6 @@ namespace n3{
 
 
         };
-
 
         template <typename T>
         struct PartiallyPersistentArray {
@@ -1377,7 +1376,6 @@ namespace n3{
 
         };
 
-
     }
 
     namespace set_ds{
@@ -2054,7 +2052,6 @@ namespace n3{
             }
         };
 
-
     }
 
     namespace math{
@@ -2230,7 +2227,60 @@ namespace n3{
             return Permutation(R);
         }
 
+        template <typename T>
+        T gcd(T a, T b){
+            while(b != 0){
+                a %= b;
+                swap(a,b);
+            }
+            return a;
+        }
 
+        // {a,b} → {a^-1 mod b,gcd(a,b)}
+        template <typename T>
+        pair<T,T> exgcd(T a, T b){
+            T xs = 1, ys = 0, xt = 0, yt = 1, tmp;
+            while (b != 0){
+                tmp = a/b;
+                a = a%b;
+                xs -= tmp*xt;
+                ys -= tmp*yt;
+                swap(xs,xt);
+                swap(ys,yt);
+                swap(a,b);
+            }
+            return {xs,a};
+        }
+
+        bool MillerRabin(ll N, vector<ll> arr){
+            int s = bit_length((N-1)&(-(N-1)))-1;
+            ll d = (N-1)>>s;
+
+            for (auto a:arr){
+                if (N <= a){return true;}
+                ll x = powll(a,d,N);
+                int t;
+                if (x != 1){
+                    for (t = 0; t < s; ++t) {
+                        if (x == N - 1) break;
+                        x = __int128_t(x) * x % N;
+                    }
+                    if (t == s) return false;
+                }
+            }
+            return true;
+        }
+
+        bool isprime(ll N){
+            if (N <= 1){return false;}
+            if (N == 2){return true;}
+            if (N % 2 == 0){return false;}
+            if (N < 4759123141LL){
+                return MillerRabin(N, {2, 7, 61});
+            } else {
+                return MillerRabin(N,{2, 325, 9375, 28178, 450775, 9780504, 1795265022});
+            }
+        }
 
     }
 
