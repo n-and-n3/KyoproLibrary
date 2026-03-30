@@ -78,15 +78,14 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
-
-struct PriorityQueue{
-    using T = ll;
-
+template <typename T, typename Compare = std::less<T>>
+struct PriorityQueue{  // comp(x,y) ⇔ x < y を表す
     vector<T> data;
-    
+    Compare comp;
 
-    PriorityQueue() : data(1){}
-    PriorityQueue(vector<T>& array) : data(1+array.size()){
+    PriorityQueue() : data(1), comp(Compare()){}
+    explicit PriorityQueue(const Compare& comp_) : data(1), comp(comp_){}
+    PriorityQueue(const vector<T>& array, const Compare& comp_ = Compare()) : data(1+array.size()), comp(comp_){
         copy(array.begin(), array.end(), data.begin()+1);
         int sz = data.size()+1;
         for(int i=sz/2;i>0;i--){
@@ -100,24 +99,26 @@ struct PriorityQueue{
     }
 
     void pop(){
+        assert(data.size() > 1);
         data[1] = data.back();
         data.pop_back();
         _down(1);
     }
 
     T top(){
+        assert(data.size() > 1);
         return data[1];
     }
 
     void _down(int i){
         while (2*i < data.size()){
             int mc;
-            if (data.size() == 2*i+1 || data[2*i] < data[2*i+1]){
+            if (data.size() == 2*i+1 || comp(data[2*i], data[2*i+1])){
                 mc = 2*i;
             } else {
                 mc = 2*i+1;
             }
-            if (data[mc] < data[i]){
+            if (comp(data[mc], data[i])){
                 swap(data[mc], data[i]);
                 i = mc;
             } else {
@@ -128,7 +129,7 @@ struct PriorityQueue{
 
     void _up(int i){
         while (i > 1){
-            if (data[i] < data[i>>1]){
+            if (comp(data[i], data[i>>1])){
                 swap(data[i], data[i>>1]);
                 i >>= 1;
             } else {
@@ -137,7 +138,7 @@ struct PriorityQueue{
         }
     }
 
-    size_t size(){
+    size_t size() const{
         return data.size()-1;
     }
 
@@ -150,8 +151,8 @@ int main(){
     ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
 
-    vector<ll> init = {1,3,4,8,9,7,2,5,6};
-    PriorityQueue pq(init);
+    vector<ll> init = {9,3,4,8,1,7,2,5,6};
+    PriorityQueue<ll> pq(init);
 
 
     cout << pq.top() << endl;
