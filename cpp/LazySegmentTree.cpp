@@ -220,6 +220,16 @@ struct LazySegmentTree{
                     point_propagate(i);
                 }
             }
+            
+            void write(int i, info x){
+                line_propagate(i);
+                i += N;
+                data[i] = x;
+                while(i > 0){
+                    data[i>>1] = op(data[i&(-2)],data[i|1]);
+                    i >>= 1;
+                }
+            }
 
 };
 
