@@ -83,6 +83,7 @@ ll powll(ll a, ll n, ll m){
     return (ll)ans;
 }
 
+
 struct FullyIndexableDictionary{
     using u64 = unsigned long long;
     using u32 = unsigned int;
@@ -264,10 +265,19 @@ struct WaveletMatrix{
     size_t sz, degits;
     vector<FullyIndexableDictionary> data;
 
-    WaveletMatrix(vector<T> array) : sz(array.size()), degits(bit_length(*max_element(array.begin(),array.end()))) , data(bit_length(*max_element(array.begin(),array.end()))){
-        int count0,count1;
+    WaveletMatrix(vector<T> array) : sz(array.size()), degits(0) {
+        if (sz == 0) {
+            return;
+        }
+        degits = bit_length(*max_element(array.begin(), array.end()));
+        data.reserve(degits);
+        for (size_t d = 0; d < degits; d++) {
+            data.emplace_back(sz);
+        }
+
+        int count0, count1;
         vector<T> tmp(sz);
-        for (int d = degits-1;d>=0;d--){
+        for (int d = (int)degits - 1; d >= 0; d--) {
             for (int i=0;i<sz;i++){
                 data[d].set(i,(array[i]>>d)&1);
             }
