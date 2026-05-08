@@ -80,14 +80,72 @@ ll powll(ll a, ll n, ll m){
 
 // ===============================================================================
 
+ll cipolla(ll a, ll const p) { 
+    // 前処理
+    a %= p;
+    if (p == 2){return a;}
+    if (a == 0){return 0;}
 
+    // オイラーの基準
+    int e = (p-1)/2;
+    ll res = 1,tmp = a;
+    while(e > 0){
+        if (e & 1){res *= tmp;res %= p;}
+        tmp *= tmp;tmp %= p;e >>= 1;
+    }
+    if (res != 1){return -1;}
+
+    // b*b - a が非平方剰余となる b を乱択で探索
+    ll b = 0;
+    // assert(res == 1); // 変数の使いまわしをしている
+    while (res != p-1){
+        b++;
+        e = (p-1)/2;
+        res = 1;tmp = (b*b+p-a)%p;
+        while(e > 0){
+            if (e & 1){res *= tmp;res %= p;}
+            tmp *= tmp;tmp %= p;e >>= 1;
+        }
+    }
+
+    // F_p[sqrt(b*b+p-a)] で冪乗
+    ll base = (b*b+p-a)%p;
+    ll res_real = 1, res_image = 0;
+    ll tmp_real = b, tmp_image = 1;
+    pair<ll,ll> tmpp;
+    e = (p+1)/2;
+    while(e > 0){
+        if (e & 1){
+            // res *= tmp; res %= p;
+            tmpp = {res_real*tmp_real%p + res_image*tmp_image%p*base%p, res_real*tmp_image%p + res_image*tmp_real%p};
+            res_real = tmpp.first; res_image = tmpp.second;
+            if (res_real >= p){res_real-=p;}
+            if (res_image >= p){res_image-=p;}
+        }
+        // tmp *= tmp;tmp %= p;
+        tmpp = {tmp_real*tmp_real%p + tmp_image*tmp_image%p*base%p, tmp_real*tmp_image%p*2};
+        tmp_real = tmpp.first; tmp_image = tmpp.second;
+        if (tmp_real >= p){tmp_real-=p;}
+        if (tmp_image >= p){tmp_image-=p;}
+        e >>= 1;
+    }
+    
+    return res_real;
+}
+
+inline ll count_liner(ll l, ll r, ll c, ll M){
+    // [l,r) に含まれる数xであって、x%M == c となるものの個数を数える
+    // assert(0 <= c && c < M);
+    return 0;
+}
+
+// ToDo：ヘンゼル持ち上げの実装
 
 //template <int prime>
 ll Prod_of_Sum_of_Log(ll N){
+    // solve \prod_{i=2}^N \sum_{k}^\infty \lfloor \log_k i \rfloor
     constexpr int prime = 3;
-    if (N <= 1){ return 0;}
-
-    // prime = 2 とそれ以外で例外処理が必要そう
+    if (N <= 1){return 0;}
 
 
 
