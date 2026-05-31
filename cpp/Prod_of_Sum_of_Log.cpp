@@ -80,9 +80,46 @@ ll powll(ll a, ll n, ll m){
 
 // ===============================================================================
 
+
+ll fast_isqrt(ll x){
+    ll ret = sqrt(x);
+    while (ret*ret > x){
+        ret--;
+    }
+    while ((ret+1)*(ret+1) <= x){
+        ret++;
+    }
+    return ret;
+}
+
+ll fast_icbrt(ll x){
+    ll ret = cbrt(x);
+    while (ret*ret*ret > x){
+        ret--;
+    }
+    while ((ret+1)*(ret+1)*(ret+1) <= x){
+        ret++;
+    }
+    return ret;
+}
+
+long long safe_pow(long long a,long long b){
+  long long res=1;
+  for(long long i=0;i<b;i++){
+      long double dres=res;
+      dres*=a;
+      if(dres>2e18){return 2e18;}
+      res*=a;
+  }
+  return res;
+}
+
+unsigned int bit_length(ll n){ return n > 0 ? 64 - __builtin_clzll(n) : 0;}
+
+
+
 ll cipolla(ll a, ll const p) { 
     // 前処理
-    a %= p;
     if (p == 2){return a;}
     if (a == 0){return 0;}
 
@@ -136,17 +173,119 @@ ll cipolla(ll a, ll const p) {
 inline ll count_liner(ll l, ll r, ll c, ll M){
     // [l,r) に含まれる数xであって、x%M == c となるものの個数を数える
     // assert(0 <= c && c < M);
-    return 0;
+    return (r+M-c-1)/M - (l+M-c-1)/M;
 }
 
-// ToDo：ヘンゼル持ち上げの実装
+
+inline ll count_square(ll l, ll r){
+    // [l,r) に含まれる数xであって、平方数であるものの個数を求める
+    return fast_isqrt(l-1) - fast_isqrt(r-1);
+}
+
+inline ll ceil_sqrt(ll x){  // x以上で最小の平方数のルート、ceil(√x)
+    ll tmp = fast_isqrt(x);
+    if (tmp * tmp == x){
+        return tmp;
+    } else {
+        return tmp+1;
+    }
+}
+
+// {a,b} → {a^-1 mod b,gcd(a,b)}
+template <typename T>
+pair<T,T> exgcd(T a, T b){
+    T xs = 1, ys = 0, xt = 0, yt = 1, tmp;
+    while (b != 0){
+        tmp = a/b;
+        a = a%b;
+        xs -= tmp*xt;
+        ys -= tmp*yt;
+        swap(xs,xt);
+        swap(ys,yt);
+        swap(a,b);
+    }
+    return {xs,a};
+}
+
+inline ll inv(ll x, ll p){
+    return exgcd(x ,p).first;
+}
+
+
 
 //template <int prime>
 ll Prod_of_Sum_of_Log(ll N){
     // solve \prod_{i=2}^N \sum_{k}^\infty \lfloor \log_k i \rfloor
     constexpr int prime = 3;
+    using lll = __int128_t;
     if (N <= 1){return 0;}
 
+    if (N <= 0){ return 0;}
+
+    int bound = fast_icbrt(N);
+
+
+    vector<ll> transitions;
+    transitions.push_back(N+1);
+    for (ll i = bit_length(N); i >= 3; i--){
+        vector<ll> temp;
+        for (ll j = 2;; j++){
+            lll temp2 = safe_pow(j,i);
+            if (temp2 > N){break;}
+            temp.push_back((ll)temp2);
+        }
+        reverse(temp.begin(), temp.end());
+        vector<ll> transitions2;
+        while (true){
+            if (temp.empty()){
+                for (ll i = (ll)transitions.size()-1; i >= 0; i--){
+                    transitions2.push_back(transitions[i]);
+                }
+                break;
+            }
+            if (transitions.empty()){
+                for (ll i = (ll)temp.size()-1; i >= 0; i--){
+                    transitions2.push_back(temp[i]);
+                }
+                break;
+            }
+            if (temp.back() < transitions.back()){
+                transitions2.push_back(temp.back());
+                temp.pop_back();
+            }
+            else{
+                transitions2.push_back(transitions.back());
+                transitions.pop_back();
+            }
+        }
+        reverse(transitions2.begin(), transitions2.end());
+        transitions = transitions2;
+    }
+
+    ll ans = 0;
+    ll prev_S = 1;
+    ll prev_now = 2;
+    for (ll i = (ll)transitions.size()-1; i >= 0; i--){
+        // [prev_now, now) に含まれる数 k に関して和を取る
+        ll now = transitions[i];
+        ll cs = count_square(prev_now, now);
+        ll S = prev_S + cs + 1;
+
+        // 部分ルジャンドルの公式
+        lll P = prime;
+        while (P <= now){
+            ans += count_liner(prev_now, now, 0, (ll)P);
+            P *= prime;
+        }
+
+        // 平方数部分の除去
+        // 一旦愚直実装をする
+        for (ll j = ceil_sqrt(prev_now); j*j < now; j++){
+        }
+        
+        prev_now = now;
+        prev_S = S;
+    }
 
 
 }

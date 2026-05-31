@@ -50,7 +50,7 @@ ll fast_isqrt(ll x){
     return ret;
 }
 
-ll fast_cbrt(ll x){
+ll fast_icbrt(ll x){
     ll ret = cbrt(x);
     while (ret*ret*ret > x){
         ret--;
@@ -84,12 +84,11 @@ ll sum_iisqrti(ll N){
     return (998244353+ans%998244353)%998244353;
 }
 
-template <int MOD>
-ll Sum_of_Prod_of_Root(ll N){
+ll Sum_of_Prod_of_Root(ll N, ll MOD){
 
     if (N <= 0){ return 0;}
 
-    int bound = fast_cbrt(N);
+    int bound = fast_icbrt(N);
 
     auto modinv = vector<ll>(bound+1);
     auto ppower = vector<ll>(bound+1,0);
@@ -199,8 +198,7 @@ unsigned long long kth_root_integer(const unsigned long long x, const int k) {
 }
 
 
-template <int MOD>
-ll Sum_of_Prod_of_Root_test(ll N){
+ll Sum_of_Prod_of_Root_test(ll N,ll MOD){
     if (N <= 0){ return 0;}
     ll ans = 0;
     for (int i=1;i<=N;i++){
@@ -221,10 +219,10 @@ ll Sum_of_Prod_of_Root_test(ll N){
 // void solve(){
 //     constexpr int p = 3;
 //     for(int N=64;N<=1025;N++){
-//         if (Sum_of_Prod_of_Root<p>(N) == Sum_of_Prod_of_Root_test<p>(N)){
+//         if (Sum_of_Prod_of_Root<N>(N, p) == Sum_of_Prod_of_Root_test<N>(N, p)){
 //         } else {
 //             cout << N << " is false." << endl;
-//             cout << Sum_of_Prod_of_Root<p>(N) << " " << Sum_of_Prod_of_Root_test<p>(N) << endl;
+//             cout << Sum_of_Prod_of_Root(N, 998244353) << " " << Sum_of_Prod_of_Root_test(N, 998244353) << endl;
 //             return;
 //         };
 //     }
@@ -235,7 +233,7 @@ ll Sum_of_Prod_of_Root_test(ll N){
 void solve(){
     ll N;
     cin >> N;
-    cout << Sum_of_Prod_of_Root<998244353>(N) << "\n";
+    cout << Sum_of_Prod_of_Root(N, 998244353) << "\n";
 }
 
 int main(){

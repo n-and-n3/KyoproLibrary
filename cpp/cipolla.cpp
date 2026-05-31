@@ -81,6 +81,7 @@ ll powll(ll a, ll n, ll m){
 ll cipolla(ll a, ll const p) { 
     // 前処理
     a %= p;
+    if (a < 0){a += p;}
     if (p == 2){return a;}
     if (a == 0){return 0;}
 
