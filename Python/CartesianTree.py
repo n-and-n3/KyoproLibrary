@@ -9,10 +9,7 @@ def CartesianTree(X):
             if left[stack[-1]] != -1:
                 right[stack[-2]] = left[stack[-1]]
             left[stack[-1]] = stack[-2]
-            tmp = stack.pop()
-            stack.pop()
-            stack.append(tmp)
-
+            stack[-1] = stack.pop()
     while len(stack) >= 2:
         right[stack[-2]] = stack[-1]
         stack.pop()
