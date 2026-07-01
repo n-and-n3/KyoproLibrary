@@ -151,6 +151,7 @@ struct RollingHashEngine{
 
 };
 
+
 struct RollingHash{
     using ulong = unsigned long long;
 
@@ -170,6 +171,22 @@ struct RollingHash{
     ulong get(int l, int r){
         assert(0 <= l && l <= r && r <= sz);
         return CalcMod(data[r] + MOD - Mul(data[l], pows[r-l]));
+    }
+
+    ulong get_all(){
+        return data[sz];
+    }
+
+    ulong concat(int a, int b, int c, int d){
+        assert(0 <= a && a <= b && b <= sz);
+        assert(0 <= c && c <= d && d <= sz);
+        ulong tmp1 = CalcMod(data[b] + MOD - Mul(data[a], pows[b-a]));
+        ulong tmp2 = CalcMod(data[d] + MOD - Mul(data[c], pows[d-c]));
+        return CalcMod(Mul(tmp1,pows[d-c]) + tmp2);
+    }
+
+    size_t size(){
+        return sz;
     }
 
     private:
