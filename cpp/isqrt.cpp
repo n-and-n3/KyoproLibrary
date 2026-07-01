@@ -13,7 +13,7 @@ unsigned long long isqrt_aux(int c,unsigned long long n){
     }
 }
 
-unsigned long isqrt(unsigned long long n){
+unsigned int isqrt(unsigned long long n){
     if (n == 0){
         return 0;
     } else {
