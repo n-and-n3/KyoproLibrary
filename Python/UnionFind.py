@@ -29,7 +29,7 @@ class UnionFind:
 		self.parent[fy] = fx
 
 		self.next[fx], self.next[fy] = self.next[fy], self.next[fx]
-		return False
+		return True
 
 	def same(self,x,y):
 		return self.root(x) == self.root(y)
