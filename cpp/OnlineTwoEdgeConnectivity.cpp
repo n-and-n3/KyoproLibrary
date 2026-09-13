@@ -1,5 +1,3 @@
-#pragma once
-
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -22,7 +20,7 @@ using namespace std;
 // and their members are linked by circular permutations.  A circular
 // permutation can be traversed from any member, so enumerating a current
 // component of size K costs O(K); finding a union-find root is unnecessary.
-
+// Over any sequence of edge insertions, add_edge() costs O(log N) amortized.
 struct OnlineTwoEdgeConnectivity {
 private:
     static_assert(sizeof(int) == 4, "This implementation assumes 32-bit int.");
@@ -120,6 +118,18 @@ private:
 
     int ecc_root_now(int v) const {
         return root_now(ecc_parent_, v);
+    }
+
+    // Resolve a possibly stale bridge-parent handle and cache the current
+    // 2ECC root in the bridge forest.  This does not alter the persistent
+    // union forest; only the auxiliary bridge pointer is shortened.
+    int bridge_parent_now(int v) {
+        int p = bridge_parent_[v];
+        if (p == -1) return -1;
+        p = ecc_root_now(p);
+        assert(p != v);
+        bridge_parent_[v] = p;
+        return p;
     }
 
     // ------------------------------------------------------------------
@@ -354,8 +364,7 @@ private:
         int child = -1;
 
         while (v != -1) {
-            int parent = bridge_parent_[v];
-            if (parent != -1) parent = ecc_root_now(parent);
+            const int parent = bridge_parent_now(v);
             bridge_parent_[v] = child;
             child = v;
             v = parent;
@@ -371,27 +380,27 @@ private:
         const int stamp = current_time_;
         int lca = -1;
 
+        // a and b are current 2ECC roots.  bridge_parent_now() preserves
+        // that invariant while also shortening stale bridge-parent handles.
         while (lca == -1) {
             if (a != -1) {
-                a = ecc_root_now(a);
                 path_a_.push_back(a);
                 if (lca_visit_time_[a] == stamp) {
                     lca = a;
                     break;
                 }
                 lca_visit_time_[a] = stamp;
-                a = bridge_parent_[a];
+                a = bridge_parent_now(a);
             }
 
             if (b != -1) {
-                b = ecc_root_now(b);
                 path_b_.push_back(b);
                 if (lca_visit_time_[b] == stamp) {
                     lca = b;
                     break;
                 }
                 lca_visit_time_[b] = stamp;
-                b = bridge_parent_[b];
+                b = bridge_parent_now(b);
             }
         }
 
@@ -404,8 +413,7 @@ private:
         const int lca = collect_bridge_path(a, b);
         assert(lca != -1);
 
-        int parent_above = bridge_parent_[lca];
-        if (parent_above != -1) parent_above = ecc_root_now(parent_above);
+        const int parent_above = bridge_parent_now(lca);
 
         int big = -1;
         int biggest_size = -1;
@@ -557,6 +565,10 @@ public:
         path_b_.reserve(min(n_, expected_total_additions + 1));
     }
 
+    // Amortized O(log N).  Over Q insertions, endpoint root searches cost
+    // O(Q log N).  Re-rooted bridge edges are charged to ordinary-component
+    // doublings, and stale bridge-parent handles are charged to 2ECC-size
+    // doublings, so all bridge-forest maintenance also totals O(Q log N).
     void add_edge(int u, int v) {
         check_vertex(u);
         check_vertex(v);
@@ -789,6 +801,7 @@ public:
         return result;
     }
 };
+
 
 
 
