@@ -6,13 +6,26 @@ Copy this file as a standalone submission.  ``convolution`` is the library API.
 MOD = 998244353
 
 
-def _ntt(a, inverse=False, tables=None):
-    """In-place, unnormalised NTT. Forward: DIF; inverse: DIT."""
+def _ntt(a, inverse=False, tables=None, scale=0):
+    """In-place DIF/DIT NTT; scale optionally normalizes the inverse."""
     n = len(a)
     if not inverse:
         length = n
         while length > 1:
             half = length >> 1
+            if length == 2:
+                for i in range(0, n, 2):
+                    x = a[i]
+                    y = a[i + 1]
+                    z = x + y
+                    if z >= MOD:
+                        z -= MOD
+                    a[i] = z
+                    z = x - y
+                    if z < 0:
+                        z += MOD
+                    a[i + 1] = z
+                break
             if tables is None:
                 root = pow(3, (MOD - 1) // length, MOD)
                 roots = [1] * half
@@ -37,13 +50,42 @@ def _ntt(a, inverse=False, tables=None):
         length = 2
         while length <= n:
             half = length >> 1
+            if length == 2 and n > 2:
+                for i in range(0, n, 2):
+                    x = a[i]
+                    y = a[i + 1]
+                    z = x + y
+                    if z >= MOD:
+                        z -= MOD
+                    a[i] = z
+                    z = x - y
+                    if z < 0:
+                        z += MOD
+                    a[i + 1] = z
+                length = 4
+                continue
             if tables is None:
                 root = pow(3, MOD - 1 - (MOD - 1) // length, MOD)
-                roots = [1] * half
+                roots = [scale if scale and length == n else 1] * half
                 for j in range(1, half):
                     roots[j] = roots[j - 1] * root % MOD
             else:
                 roots = tables[length]
+                if scale and length == n:
+                    roots = [w * scale % MOD for w in roots]
+            if scale and length == n:
+                for j in range(half):
+                    x = a[j] * scale % MOD
+                    y = a[j + half] * roots[j] % MOD
+                    z = x + y
+                    if z >= MOD:
+                        z -= MOD
+                    a[j] = z
+                    z = x - y
+                    if z < 0:
+                        z += MOD
+                    a[j + half] = z
+                break
             for i in range(0, n, length):
                 for j in range(half):
                     x = a[i + j]
@@ -77,11 +119,27 @@ def _tables(z):
     return forward, inverse
 
 
-def _blocked_convolution(a, b):
+def _choose_block_ntt(n, m, normal_z):
+    """Pick the cheapest overlap-add transform length below the full NTT."""
+    z = max(128, 1 << (n - 1).bit_length()) << 1
+    best_z = 0
+    best_cost = 1 << 62
+    while z < normal_z and z <= 1 << 23:
+        block = z - n + 1
+        blocks = (m + block - 1) // block
+        cost = (2 * blocks + 1) * z * (z.bit_length() - 1)
+        if cost < best_cost:
+            best_z, best_cost = z, cost
+        z <<= 1
+    if 5 * best_cost < 12 * normal_z * (normal_z.bit_length() - 1):
+        return best_z
+    return 0
+
+
+def _blocked_convolution(a, b, z):
     """Overlap-add for a short kernel and a much longer input."""
     n, m = len(a), len(b)
-    block = max(128, 1 << (n - 1).bit_length())
-    z = block << 1
+    block = z - n + 1
     if z > 1 << 23:
         raise ValueError("NTT length exceeds 2^23")
     forward, inverse = _tables(z)
@@ -98,11 +156,15 @@ def _blocked_convolution(a, b):
         for i in range(z):
             work[i] = work[i] * kernel[i] % MOD
         _ntt(work, True, inverse)
-        for i in range(n + len(part) - 1):
+        # Only the first n-1 coefficients overlap the preceding block.
+        overlap = n - 1 if start else 0
+        for i in range(overlap):
             value = out[start + i] + work[i]
             if value >= MOD:
                 value -= MOD
             out[start + i] = value
+        for i in range(overlap, n + len(part) - 1):
+            out[start + i] = work[i]
     return out
 
 
@@ -164,13 +226,9 @@ def convolution(a, b):
         a, b = b, a
         n, m = m, n
     z = 1 << (size - 1).bit_length()
-    if n >= 33 and m >= 16384:
-        block = max(128, 1 << (n - 1).bit_length())
-        bz = block << 1
-        blocks = (m + block - 1) // block
-        if 5 * (2 * blocks + 1) * bz * (bz.bit_length() - 1) < 12 * z * (z.bit_length() - 1):
-            return _blocked_convolution(a, b)
-    if (min(n, m) <= 100 and n * m <= 100000) or n * m <= 4096:
+    bz = _choose_block_ntt(n, m, z) if n > 128 and m >= 16384 else 0
+    direct_limit = (6 if z <= 512 else 13) * z * (z.bit_length() - 1)
+    if n <= 128 or (not bz and n * m <= direct_limit):
         if n < m:
             a, b = b, a
             n, m = m, n
@@ -181,6 +239,8 @@ def convolution(a, b):
                 for i in range(n):
                     c[i + j] = (c[i + j] + a[i] * bj) % MOD
         return c
+    if bz:
+        return _blocked_convolution(a, b, bz)
     if z > 1 << 23:
         raise ValueError("NTT length exceeds 2^23")
     fa = a[:] + [0] * (z - n)
@@ -193,12 +253,13 @@ def convolution(a, b):
         _ntt(fb)
         for i in range(z):
             fa[i] = fa[i] * fb[i] % MOD
-    _ntt(fa, True)
     iz = pow(z, MOD - 2, MOD)
-    return [fa[i] * iz % MOD for i in range(size)]
+    _ntt(fa, True, scale=iz)
+    return fa[:size]
 
 
 def _read_ints(data):
+    values = []
     number = 0
     in_number = False
     for c in data:
@@ -206,19 +267,20 @@ def _read_ints(data):
             number = number * 10 + c - 48
             in_number = True
         elif in_number:
-            yield number
+            values.append(number)
             number = 0
             in_number = False
     if in_number:
-        yield number
+        values.append(number)
+    return values
 
 
 if __name__ == "__main__":
     import sys
 
     values = _read_ints(sys.stdin.buffer.read())
-    n = next(values)
-    m = next(values)
-    a = [next(values) for _ in range(n)]
-    b = [next(values) for _ in range(m)]
+    n, m = values[:2]
+    a = values[2:2 + n]
+    b = values[2 + n:2 + n + m]
+    del values
     sys.stdout.write(" ".join(map(str, convolution(a, b))) + "\n")

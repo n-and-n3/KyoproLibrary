@@ -89,13 +89,33 @@ def ntt_plan(n: int):
     return roots, iroots, rate2, rate3, irate2, irate3
 
 
-def ntt(a: list[u32], inverse: bool, plan) -> None:
+def ntt(a: list[u32], inverse: bool, plan, filled: int) -> None:
     n = len(a)
     buf = a._ptr
     logn = (n - 1).bit_length()
     roots, iroots, rate2, rate3, irate2, irate3 = plan
     if not inverse:
         h = 0
+        # The first radix-4 stage has no rotation between blocks.
+        if logn >= 5 and (logn & 1) and filled <= n >> 1:
+            p = n >> 2
+            if filled <= p:
+                for j in range(p):
+                    v = buf[j]
+                    buf[j + p] = v
+                    buf[j + 2 * p] = v
+                    buf[j + 3 * p] = v
+            else:
+                imagv = Vec[u32, 8](u32(roots[2]))
+                for j in range(0, p, 8):
+                    v0 = Vec[u32, 8](buf + j)
+                    v1 = Vec[u32, 8](buf + j + p)
+                    w = mmv(v1, imagv)
+                    addv(v0, v1).store(buf + j)
+                    subv(v0, v1).store(buf + j + p)
+                    addv(v0, w).store(buf + j + 2 * p)
+                    subv(v0, w).store(buf + j + 3 * p)
+            h = 2
         while h < logn:
             if logn - h == 1:
                 p = 1 << (logn - h - 1)
@@ -254,16 +274,58 @@ def ntt(a: list[u32], inverse: bool, plan) -> None:
                         rot = mm(rot, irate3[c])
 
 
-def blocked_convolution(a: list[int], b: list[int]) -> list[int]:
+def mont_array(a: list[int], z: int) -> list[u32]:
+    out = [u32(0)] * z
+    src = a._ptr
+    dst = out._ptr
+    r2 = Vec[u32, 8](u32(MONT_R2))
+    end = len(a) & ~7
+    for i in range(0, end, 8):
+        mmv(Vec[i64, 8](src + i).cast(u32), r2).store(dst + i)
+    for i in range(end, len(a)):
+        dst[i] = u32(mm(a[i], MONT_R2))
+    return out
+
+
+def finish(a: list[u32], size: int, iz: int) -> list[int]:
+    out = [0] * size
+    src = a._ptr
+    dst = out._ptr
+    iv = Vec[u32, 8](u32(iz))
+    end = size & ~7
+    for i in range(0, end, 8):
+        mmv(Vec[u32, 8](src + i), iv).cast(i64).store(dst + i)
+    for i in range(end, size):
+        out[i] = mm(int(src[i]), iz)
+    return out
+
+
+def choose_block_ntt(n: int, m: int, normal_z: int) -> int:
+    """Pick the cheapest overlap-add transform length below the full NTT."""
+    z = max(128, 1 << (n - 1).bit_length()) << 1
+    best_z = 0
+    best_cost = 1 << 62
+    while z < normal_z and z <= 1 << 23:
+        block = z - n + 1
+        blocks = (m + block - 1) // block
+        cost = (2 * blocks + 1) * z * (z.bit_length() - 1)
+        if cost < best_cost:
+            best_z, best_cost = z, cost
+        z <<= 1
+    if 5 * best_cost < 12 * normal_z * (normal_z.bit_length() - 1):
+        return best_z
+    return 0
+
+
+def blocked_convolution(a: list[int], b: list[int], z: int) -> list[int]:
     """Overlap-add; reuse the short input transform across all blocks."""
     n, m = len(a), len(b)
-    block = max(128, 1 << (n - 1).bit_length())
-    z = block << 1
+    block = z - n + 1
     if z > 1 << 23:
         raise ValueError("NTT length exceeds 2^23")
-    kernel = [u32(mm(x, MONT_R2)) for x in a] + [u32(0)] * (z - n)
+    kernel = mont_array(a, z)
     plan = ntt_plan(z)
-    ntt(kernel, False, plan)
+    ntt(kernel, False, plan, n)
     iz = pow(z, MOD - 2, MOD)
     # Keep the scaled kernel in ordinary residues. Multiplying it by a
     # Montgomery-transformed block produces ordinary residues for the INTT.
@@ -271,15 +333,19 @@ def blocked_convolution(a: list[int], b: list[int]) -> list[int]:
     out = [0] * (n + m - 1)
     for start in range(0, m, block):
         part = b[start:start + block]
-        work = [u32(mm(x, MONT_R2)) for x in part] + [u32(0)] * (z - len(part))
-        ntt(work, False, plan)
+        work = mont_array(part, z)
+        ntt(work, False, plan, len(part))
         pointwise(work, kernel)
-        ntt(work, True, plan)
-        for i in range(n + len(part) - 1):
+        ntt(work, True, plan, 0)
+        # Only the first n-1 coefficients overlap the preceding block.
+        overlap = n - 1 if start else 0
+        for i in range(overlap):
             v = out[start + i] + int(work[i])
             if v >= MOD:
                 v -= MOD
             out[start + i] = v
+        for i in range(overlap, n + len(part) - 1):
+            out[start + i] = int(work[i])
     return out
 
 
@@ -287,6 +353,25 @@ def constant_convolution(value: int, width: int, other: list[int]) -> list[int]:
     """Convolve a constant vector using a sliding window sum."""
     m = len(other)
     out = [0] * (width + m - 1)
+    uniform = True
+    for i in range(1, m):
+        if other[i] != other[0]:
+            uniform = False
+            break
+    if uniform:
+        step = value * other[0] % MOD
+        total = 0
+        for k in range(len(out)):
+            if k < m:
+                total += step
+            if k >= width:
+                total -= step
+            if total >= MOD:
+                total -= MOD
+            elif total < 0:
+                total += MOD
+            out[k] = total
+        return out
     total = 0
     for k in range(len(out)):
         if k < m:
@@ -349,7 +434,7 @@ def convolution(a: list[int], b: list[int]) -> list[int]:
                 break
         if constant:
             return constant_convolution(b[0], m, a)
-    if min(n, m) <= 32 or n * m <= 4096:
+    if min(n, m) <= 12 or (min(n, m) <= 32 and n * m <= 400000) or n * m <= 4096:
         if n < m:
             a, b = b, a
             n, m = m, n
@@ -364,27 +449,24 @@ def convolution(a: list[int], b: list[int]) -> list[int]:
         a, b = b, a
         n, m = m, n
     z = 1 << (size - 1).bit_length()
-    if n >= 33 and m >= 16384:
-        block = max(128, 1 << (n - 1).bit_length())
-        bz = block << 1
-        blocks = (m + block - 1) // block
-        if 5 * (2 * blocks + 1) * bz * (bz.bit_length() - 1) < 12 * z * (z.bit_length() - 1):
-            return blocked_convolution(a, b)
+    if n >= 13 and m >= 16384:
+        bz = choose_block_ntt(n, m, z)
+        if bz:
+            return blocked_convolution(a, b, bz)
     if z > 1 << 23:
         raise ValueError("NTT length exceeds 2^23")
-    fa = [u32(mm(x, MONT_R2)) for x in a] + [u32(0)] * (z - n)
+    fa = mont_array(a, z)
     plan = ntt_plan(z)
-    ntt(fa, False, plan)
+    ntt(fa, False, plan, n)
     if a == b:
         pointwise_square(fa)
     else:
-        fb = [u32(mm(x, MONT_R2)) for x in b] + [u32(0)] * (z - m)
-        ntt(fb, False, plan)
+        fb = mont_array(b, z)
+        ntt(fb, False, plan, m)
         pointwise(fa, fb)
-    ntt(fa, True, plan)
+    ntt(fa, True, plan, 0)
     iz = pow(z, MOD - 2, MOD)
-    normalize(fa, iz)
-    return [int(fa[i]) for i in range(size)]
+    return finish(fa, size, iz)
 
 
 def read_ints(data: str) -> list[int]:
