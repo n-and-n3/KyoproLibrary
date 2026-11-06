@@ -4,7 +4,8 @@ Yosupo `convolution_mod` 向けの、単独で使える実装です。入力係�
 
 | 実行環境 | ファイル | 関数 |
 | --- | --- | --- |
-| Codon | `convolution_codon.py` | `convolution(a: list[int], b: list[int]) -> list[int]` |
+| Codon 0.20.6以降 | `convolution_codon.py` | `convolution(a: list[int], b: list[int]) -> list[int]` |
+| AtCoder Codon 0.19.3 | `convolution_codon_atcoder.py` | `convolution(a, b)` |
 | PyPy 3 | `convolution_pypy.py` | `convolution(a, b)` |
 
 両方とも空配列を渡すと空配列を返し、入力配列を変更しません。ファイルをそのまま提出すれば、Yosupo形式の標準入力・標準出力でも動きます。
@@ -14,6 +15,8 @@ Codon のビルド例:
 ```sh
 codon build -release -o convolution_codon convolution_codon.py
 ```
+
+**AtCoder提出時は `convolution_codon_atcoder.py` の全文を `Main.py` に貼り付けてください。** AtCoderのCodon 0.19.3には `simd` モジュールがなく、`convolution_codon.py` はコンパイルできません。AtCoder版はSIMDを使わないNTTとCの `read` / `write` を使います。Codon 0.19.3の `--release` でコンパイルし、保存済みYosupo 7ケースとC++実装との乱数比較82ケースで検証しました。最大乱数ケースのローカル実行時間は約269 msでした。
 
 Codon版はMontgomery乗算、radix-4 NTT、8レーンSIMDを使います。入力のMontgomery変換もSIMD化し、ゼロ埋めされた先頭段を簡略化します。PyPy版はradix-2 NTTで、長さ2の段と逆変換末尾の正規化を最適化しています。両版とも短い入力の愚直積、長さが大きく異なる入力の分割積、定数配列、両端のゼロ、平方を処理します。分割積ではNTT長を入力長に応じて選びます。動作確認はCodon 0.20.6、PyPy 3.9.18、x86-64 AVX2環境で行いました。
 
