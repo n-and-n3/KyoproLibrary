@@ -8,7 +8,7 @@ Yosupo `convolution_mod` 向けの、単独で使える実装です。入力係�
 | AtCoder Codon 0.19.3 | `convolution_codon_atcoder.py` | `convolution(a, b)` |
 | PyPy 3 | `convolution_pypy.py` | `convolution(a, b)` |
 
-両方とも空配列を渡すと空配列を返し、入力配列を変更しません。ファイルをそのまま提出すれば、Yosupo形式の標準入力・標準出力でも動きます。
+いずれも空配列を渡すと空配列を返し、入力配列を変更しません。ファイルをそのまま提出すれば、Yosupo形式の標準入力・標準出力でも動きます。
 
 Codon のビルド例:
 
@@ -16,9 +16,18 @@ Codon のビルド例:
 codon build -release -o convolution_codon convolution_codon.py
 ```
 
-**AtCoder提出時は `convolution_codon_atcoder.py` の全文を `Main.py` に貼り付けてください。** AtCoderのCodon 0.19.3には `simd` モジュールがなく、`convolution_codon.py` はコンパイルできません。AtCoder版はSIMDを使わないNTTとCの `read` / `write` を使います。Codon 0.19.3の `--release` でコンパイルし、保存済みYosupo 7ケースとC++実装との乱数比較82ケースで検証しました。最大乱数ケースのローカル実行時間は約269 msでした。
+**AtCoder提出時は `convolution_codon_atcoder.py` の全文を `Main.py` に貼り付けてください。** AtCoderのCodon 0.19.3には `simd` モジュールがなく、`convolution_codon.py` はコンパイルできません。AtCoder版は `arr.ptr` で配列にアクセスするMontgomery radix-4 NTTとCの `read` / `write` を使います。Codon 0.19.3の `--release` でコンパイルし、保存済みYosupo 7ケースとC++実装との追加132ケースで検証しました。
 
-Codon版はMontgomery乗算、radix-4 NTT、8レーンSIMDを使います。入力のMontgomery変換もSIMD化し、ゼロ埋めされた先頭段を簡略化します。PyPy版はradix-2 NTTで、長さ2の段と逆変換末尾の正規化を最適化しています。両版とも短い入力の愚直積、長さが大きく異なる入力の分割積、定数配列、両端のゼロ、平方を処理します。分割積ではNTT長を入力長に応じて選びます。動作確認はCodon 0.20.6、PyPy 3.9.18、x86-64 AVX2環境で行いました。
+AtCoder版のローカル比較（同一のi7-1355U、1コア固定、`OMP_NUM_THREADS=1`、起動・入出力込みの9回中央値、ms）:
+
+| 入力 | [提示された238 msの提出](https://atcoder.jp/contests/language-test-202505/submissions/69971751) | 旧AtCoder版 | 現AtCoder版 |
+| --- | ---: | ---: | ---: |
+| 最大乱数 `524288 × 524288` | 348.2 | 249.2 | 121.4 |
+| 長短 `100 × 524288` | 227.6 | 146.4 | 57.8 |
+
+利用者のAtCoder提出結果は旧AtCoder版300 ms、PyPy版893 msです。新AtCoder版のオンライン実行時間はまだ測定していません。PyPy版では複数のNTTと入力パーサーの候補をPyPy 3.11-v7.3.20で比較しましたが、安定した改善を確認できず、コードは維持しています。
+
+Codon 0.20.6以降版はMontgomery乗算、radix-4 NTT、8レーンSIMDを使います。入力のMontgomery変換もSIMD化し、ゼロ埋めされた先頭段を簡略化します。PyPy版はradix-2 NTTで、長さ2の段と逆変換末尾の正規化を最適化しています。両版とも短い入力の愚直積、長さが大きく異なる入力の分割積、定数配列、両端のゼロ、平方を処理します。分割積ではNTT長を入力長に応じて選びます。動作確認はCodon 0.20.6、PyPy 3.9.18、x86-64 AVX2環境で行いました。
 
 検証にはLibrary Checkerの `convolution_mod` 公式53ケース、切り替え境界70ケース、追加乱数200ケースを使用しました。速度比較の基準は、[Qiitaの記事](https://qiita.com/navel_tos/items/9195de7041cf2c8b535b)の実装と、[Library CheckerのアセンブリなしC++提出](https://judge.yosupo.jp/submission/393435)です。
 
