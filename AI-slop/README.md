@@ -2,7 +2,7 @@
 
 Codon 0.19.3 用は [Codon/factorize.py](Codon/factorize.py)、PyPy 3.11 用は [PyPy/factorize.py](PyPy/factorize.py)。両方とも `is_prime(n) -> bool` と `factorize(n) -> list[int]` を公開する。`factorize` の結果は重複を含む昇順の素因数列で、`factorize(1) == []`。Codon 版は `1 <= n <= 10**18`、PyPy 版は `1 <= n < 2**64` を扱う。素数判定は 0 と負数に対して `False` を返す。
 
-多数の素数判定だけを行う場合は、別の [Codon/is_prime_fast.py](Codon/is_prime_fast.py) と [PyPy/is_prime_fast.py](PyPy/is_prime_fast.py) にある同名の `is_prime` が速い。Forišek–Jančina の FJ32_256 と FJ64_16k ハッシュ表を使い、素数に対する Miller–Rabin を 32-bit 範囲では 1 回、64-bit 範囲では 3 回に減らす。約 145–200 KB のソースが増えるので、分解ライブラリには組み込んでいない。Codon 高速版は単一ファイルで完結している。
+多数の素数判定だけを行い、素数候補が多い場合は、別の [Codon/is_prime_fast.py](Codon/is_prime_fast.py) と [PyPy/is_prime_fast.py](PyPy/is_prime_fast.py) にある同名の `is_prime` が速い。Forišek–Jančina の FJ32_256 と FJ64_16k ハッシュ表を使い、素数に対する Miller–Rabin を 32-bit 範囲では 1 回、64-bit 範囲では 3 回に減らす。約 145–200 KB のソースが増えるので、分解ライブラリには組み込んでいない。Codon 高速版は単一ファイルで完結している。合成数ばかりの `many_liars` では通常版より遅い場合もあった。
 
 Codon には 4.2 KB の [Codon/is_prime_bpsw.py](Codon/is_prime_bpsw.py) もある。底 2 の強い Miller–Rabin と Selfridge の強い Lucas テストを組み合わせた単一ファイルで、`0 <= n <= 10**18` 用の `is_prime(n)` を公開する。ハッシュ表が必要ない小さいコードとして使える。
 
