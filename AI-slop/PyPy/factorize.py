@@ -13,7 +13,10 @@ _BASES64 = (2, 325, 9375, 28178, 450775, 9780504, 1795265022)
 
 
 def _miller_rabin(n, extract=False, prefiltered=False):
-    """Return 0 for prime, 1 for composite, or a factor when extract=True."""
+    """Return 0 for prime, 1 for composite, or a factor when extract=True.
+
+    prefiltered=True requires n to be coprime to every prime in _SMALL.
+    """
     if n < 2:
         return 1
     if not prefiltered:
