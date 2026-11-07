@@ -34,5 +34,10 @@ assert factorize(999381247093216751) == [999665081, 999716071]
 assert factorize(999999967571071807) == [364440383, 2743932929]
 assert factorize(341550071728321) == [10670053, 32010157]
 assert factorize(10**18) == [2] * 18 + [5] * 18
+assert is_prime(2**64 - 59)
+assert is_prime_fast(2**64 - 59)
+assert factorize(2**64 - 59) == [2**64 - 59]
+assert factorize(2**64 - 1) == [3, 5, 17, 257, 641, 65537, 6700417]
+assert factorize(4294967291 * 4294967279) == [4294967279, 4294967291]
 
 print("number theory self-check OK")

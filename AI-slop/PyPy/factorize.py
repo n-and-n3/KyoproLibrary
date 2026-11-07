@@ -69,10 +69,10 @@ def _rho(n):
             while k < r and g == 1:
                 ys = y
                 q = 1
-                batch = min(128, r - k)
+                batch = min(512, r - k)
                 for _ in range(batch):
                     y = (pow(y, 2, n) + c) % n
-                    q = q * (x - y) % n
+                    q = q * abs(x - y) % n
                 g = gcd(q, n)
                 k += batch
             r <<= 1

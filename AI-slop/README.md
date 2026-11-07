@@ -8,11 +8,13 @@ Codon 0.19.3 用は [Codon/factorize.py](Codon/factorize.py)、PyPy 3.11 用は 
 
 - 小さい素数で先に割り、残りを [決定的 64-bit Miller–Rabin](https://miller-rabin.appspot.com/) で判定する。小さい範囲では `{2,7,61}`、それ以外では 7 基底を使う。
 - 判定中に `x² ≡ 1 (mod n)` かつ `x ≠ ±1 (mod n)` となったら `gcd(x−1,n)` で因数を取り出す。例: `5461 = 43 × 127` では底 2 の途中で `x = 128` となり、`128² ≡ 1 (mod 5461)` と `gcd(127, 5461) = 127` から因数が得られる。因数が出ない合成数は、近い因数向けの短い Fermat 法を試し、残りを [Brent 版 Pollard rho](https://maths-people.anu.edu.au/~brent/pub/pub051.html) で分解する。
-- Codon では 64-bit Montgomery 乗算、PyPy では組み込みの `pow(a,b,n)` と `math.gcd` を使う。rho の積は Codon で最大 256 回、PyPy で最大 128 回ごとに gcd を取る。
+- Codon では 64-bit Montgomery 乗算、PyPy では組み込みの `pow(a,b,n)` と `math.gcd` を使う。rho の積は Codon で最大 256 回、PyPy で最大 512 回ごとに gcd を取る。
+
+PyPy の gcd 間隔は 64、128、256、512、1024 を比較した。公式の大きな半素数 400 個と追加の半素数 1,000 個を、各入力で同じ乱数初期値にそろえ、各実装を交互に呼ぶ測定で 512 回を選んだ。
 
 ## 検証
 
-[Library Checker の公式ジェネレータ](https://github.com/yosupo06/library-checker-problems)を 2026-11-07 に実行した。`factorize` 31 ファイル、計 2,635 数、`primality_test` 13 ファイル、計 801,129 数について Codon・PyPy の出力が公式解と一致した。高速素数判定も全 13 ファイルで一致し、PyPy 高速版はさらにランダムな 64-bit 整数 200,000 個で通常版と一致した。
+[Library Checker の公式ジェネレータ](https://github.com/yosupo06/library-checker-problems)を 2026-11-07 に実行した。`factorize` 31 ファイル、計 2,635 数、`primality_test` 13 ファイル、計 801,129 数について Codon・PyPy の出力が公式解と一致した。さらに 20,000 個の半素数でも両方の因数列を確認した。高速素数判定も全 13 ファイルで一致し、PyPy 高速版はランダムな 64-bit 整数 200,000 個で通常版と一致した。PyPy の通常版は `2**64-1` の分解と `2**64-59` の素数判定も確認した。
 
 Miller–Rabin 中の因数抽出は、分解ケースの最初の 2,635 数に対して 95 回成功した。うち 93 回は Carmichael ケースで、大きな半素数 400 個では 0 回だった。したがって、この工夫は安価なので入れているが、最も重い半素数を速くする中心策にはならない。近い因数を持つ `big2` 系では、Fermat 法を 32 回試すと 400 個中 312 個、128 回なら全 400 個を rho なしで分解した。128 回に変更した結果、PyPy の `big2` 全 400 件の関数実行時間は約 0.28 秒から約 0.02 秒になった。平方数の 16 による剰余を先に調べることで、離れた因数を持つ 400 件の前処理も 100 回反復で約 0.8 秒から約 0.25 秒になった。
 
