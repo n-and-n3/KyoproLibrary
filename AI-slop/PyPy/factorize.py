@@ -69,7 +69,9 @@ def _rho(n):
                 if large:
                     y = (y * y + c) % n
                 else:
-                    y = (pow(y, 2, n) + c) % n
+                    y = pow(y, 2, n) + c
+                    if y >= n:
+                        y -= n
             k = 0
             while k < r and g == 1:
                 ys = y
@@ -79,7 +81,9 @@ def _rho(n):
                     if large:
                         y = (y * y + c) % n
                     else:
-                        y = (pow(y, 2, n) + c) % n
+                        y = pow(y, 2, n) + c
+                        if y >= n:
+                            y -= n
                     q = q * abs(x - y) % n
                 g = gcd(q, n)
                 k += batch
@@ -90,7 +94,9 @@ def _rho(n):
                 if large:
                     ys = (ys * ys + c) % n
                 else:
-                    ys = (pow(ys, 2, n) + c) % n
+                    ys = pow(ys, 2, n) + c
+                    if ys >= n:
+                        ys -= n
                 g = gcd(x - ys, n)
         if g != n:
             return g
