@@ -1,4 +1,4 @@
-"""Deterministic primality and factorization for 1 <= n <= 10**18.
+"""Deterministic primality and factorization for 1 <= n <= 2**63-1.
 
 Library Checker: primality_test and factorize. No external modules required.
 Public API: is_prime(n), factorize(n). factorize returns sorted prime factors.
@@ -9,7 +9,7 @@ from random import randrange
 
 
 class Montgomery:
-    """64-bit Montgomery residues for odd moduli at most 10**18."""
+    """64-bit Montgomery residues for odd moduli below 2**63."""
     n: u64
     neg_inv: u64
     one: u64
@@ -26,7 +26,7 @@ class Montgomery:
 
     @inline
     def mul(self, a: u64, b: u64) -> u64:
-        # The bound n <= 10**18 keeps t + m*n below 2**128.
+        # n < 2**63 keeps t + m*n below 2**128 and the result below 2**64.
         t = u128(a) * u128(b)
         m = u64(t) * self.neg_inv
         result = u64((t + u128(m) * u128(self.n)) >> u128(64))
@@ -94,9 +94,9 @@ def _miller_rabin(n: int, extract: bool = False) -> int:
 
 
 def is_prime(n: int) -> bool:
-    """Exact for 0 <= n <= 10**18."""
-    if n > 10**18:
-        raise ValueError("n must be <= 10**18")
+    """Exact for 0 <= n <= 2**63-1."""
+    if n > 9223372036854775807:
+        raise ValueError("n must be <= 2**63-1")
     return _miller_rabin(n) == 0
 
 
@@ -141,16 +141,25 @@ def _rho(n: int) -> int:
             return g
 
 
-def _fermat_near_square(n: int) -> int:
+@inline
+def _isqrt_u63(n: int) -> int:
+    """Exact floor sqrt for 0 <= n <= 2**63-1, seeded by hardware sqrt."""
     a = int(sqrt(float(n)))
-    while a * a > n:
+    wide_n = u128(n)
+    while u128(a) * u128(a) > wide_n:
         a -= 1
-    while (a + 1) * (a + 1) <= n:
+    while u128(a + 1) * u128(a + 1) <= wide_n:
         a += 1
-    if a * a < n:
+    return a
+
+
+def _fermat_near_square(n: int) -> int:
+    a = _isqrt_u63(n)
+    if u128(a) * u128(a) < u128(n):
         a += 1
+    # Only the difference is kept in signed int; a*a may exceed 2**63-1.
+    b2 = int(u128(a) * u128(a) - u128(n))
     for _ in range(128):
-        b2 = a * a - n
         # Squares modulo 16 are 0, 1, 4, or 9.
         if (531 >> (b2 & 15)) & 1:
             b = int(sqrt(float(b2)))
@@ -158,14 +167,15 @@ def _fermat_near_square(n: int) -> int:
                 f = a - b
                 if 1 < f < n:
                     return f
+        b2 += 2 * a + 1
         a += 1
     return 1
 
 
 def factorize(n: int) -> list[int]:
     """Sorted prime factors with multiplicity; factorize(1) == []."""
-    if n < 1 or n > 10**18:
-        raise ValueError("factorize requires 1 <= n <= 10**18")
+    if n < 1 or n > 9223372036854775807:
+        raise ValueError("factorize requires 1 <= n <= 2**63-1")
     factors: list[int] = []
     stack = [n]
     while stack:

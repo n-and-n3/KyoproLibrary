@@ -5,7 +5,7 @@ AtCoder の Codon 0.19.3 を対象に、`Python/` の 23 ファイルと `cpp/` 
 ```
 AI-slop/Codon/
 ├── convolution.py       # 単体で提出可能
-├── factorize.py         # is_prime / factorize、10**18 まで
+├── factorize.py         # is_prime / factorize、2**63-1 まで
 ├── is_prime_fast.py     # 多数の判定向けの FJ32_256 / FJ64_16k 版
 ├── is_prime_bpsw.py     # 短い Baillie–PSW 版
 ├── is_prime_compact.py  # FJ32_256 + Baillie–PSW 版
