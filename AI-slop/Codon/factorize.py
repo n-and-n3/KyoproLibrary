@@ -24,6 +24,7 @@ class Montgomery:
         self.one = u64((u128(1) << u128(64)) % u128(self.n))
         self.r2 = u64(u128(self.one) * u128(self.one) % u128(self.n))
 
+    @inline
     def mul(self, a: u64, b: u64) -> u64:
         # The bound n <= 10**18 keeps t + m*n below 2**128.
         t = u128(a) * u128(b)
