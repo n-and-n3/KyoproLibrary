@@ -145,7 +145,7 @@ def is_prime(n: int) -> bool:
         return False
     if n > 10**18:
         raise ValueError('n must be <= 10**18')
-    for p in (2,3,5,7,11,13,17,19,23,29,31,37):
+    for p in (2,3,5,7):
         if n == p:
             return True
         if n % p == 0:
