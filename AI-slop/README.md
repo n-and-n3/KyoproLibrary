@@ -6,6 +6,8 @@ Codon 0.19.3 用は [Codon/factorize.py](Codon/factorize.py)、PyPy 3.11 用は 
 
 Codon には 4.2 KB の [Codon/is_prime_bpsw.py](Codon/is_prime_bpsw.py) もある。底 2 の強い Miller–Rabin と Selfridge の強い Lucas テストを組み合わせた単一ファイルで、`0 <= n <= 10**18` 用の `is_prime(n)` を公開する。ハッシュ表が必要ない小さいコードとして使える。
 
+[Codon/is_prime_compact.py](Codon/is_prime_compact.py) は 7.5 KB で、`n < 2**32` に FJ32_256、それ以上に BPSW を使う。同じ `is_prime(n)` を公開し、公式ケースでは約 200 KB の FJ 全表版に近い速度だった。短さと速度を両立したい場合の選択肢である。
+
 ## 採用した方法
 
 - 小さい素数で先に割り、残りを [決定的 64-bit Miller–Rabin](https://miller-rabin.appspot.com/) で判定する。小さい範囲では `{2,7,61}`、それ以外では 7 基底を使う。
@@ -17,7 +19,7 @@ PyPy の gcd 間隔は 64、128、256、512、1024 を比較した。公式の�
 
 ## 検証
 
-[Library Checker の公式ジェネレータ](https://github.com/yosupo06/library-checker-problems)を 2026-11-07 に実行した。`factorize` 31 ファイル、計 2,635 数、`primality_test` 13 ファイル、計 801,129 数について Codon・PyPy の出力が公式解と一致した。さらに 20,000 個の半素数でも両方の因数列を確認した。高速素数判定と Codon の BPSW 版も全 13 ファイルで一致した。`many_liars` の 10 万合成数には底 2 の強い Miller–Rabin を通過するものが 16,812 個あり、Codon BPSW はすべて合成数と判定した。Codon BPSW 版は 100 万以下の全整数と、ランダムな 20 万整数でも通常版と一致した。PyPy 高速版はランダムな 64-bit 整数 200,000 個で通常版と一致した。PyPy の通常版は `2**64-1` の分解と `2**64-59` の素数判定も確認した。
+[Library Checker の公式ジェネレータ](https://github.com/yosupo06/library-checker-problems)を 2026-11-07 に実行した。`factorize` 31 ファイル、計 2,635 数、`primality_test` 13 ファイル、計 801,129 数について Codon・PyPy の出力が公式解と一致した。さらに 20,000 個の半素数でも両方の因数列を確認した。高速素数判定、Codon の BPSW 版、小容量版も全 13 ファイルで一致した。`many_liars` の 10 万合成数には底 2 の強い Miller–Rabin を通過するものが 16,812 個あり、Codon BPSW はすべて合成数と判定した。Codon BPSW 版と小容量版は 100 万以下の全整数と、ランダムな 20 万整数でも通常版と一致した。PyPy 高速版はランダムな 64-bit 整数 200,000 個で通常版と一致した。PyPy の通常版は `2**64-1` の分解と `2**64-59` の素数判定も確認した。
 
 Miller–Rabin 中の因数抽出は、分解ケースの最初の 2,635 数に対して 95 回成功した。うち 93 回は Carmichael ケースで、大きな半素数 400 個では 0 回だった。公式 2,635 数全体の PyPy 測定では、抽出ありの rho 呼び出しが 1,901 回、抽出なしが 2,022 回だった。Carmichael 100 件だけでは 82 回対 200 回で、分解時間は約 4 割減った。この工夫は構造のある合成数には効くが、最も重い半素数を速くする中心策にはならない。近い因数を持つ `big2` 系では、Fermat 法を 32 回試すと 400 個中 312 個、128 回なら全 400 個を rho なしで分解した。128 回に変更した結果、PyPy の `big2` 全 400 件の関数実行時間は約 0.28 秒から約 0.02 秒になった。平方数の 16 による剰余を先に調べることで、離れた因数を持つ 400 件の前処理も 100 回反復で約 0.8 秒から約 0.25 秒になった。
 
@@ -25,4 +27,4 @@ Miller–Rabin 中の因数抽出は、分解ケースの最初の 2,635 数に�
 
 オンラインの最速提出は 2026-11-07 時点で、[factorize](https://judge.yosupo.jp/submissions/?problem=factorize&order=%2Btime&status=AC) が C++ 13 ms、PyPy 237 ms、[primality_test](https://judge.yosupo.jp/submissions/?problem=primality_test&order=%2Btime&status=AC) が C++ 30 ms、PyPy 331 ms。Codon の提出言語は Library Checker にない。ローカル値とオンライン値は CPU・入出力が違うため直接比較しない。
 
-ローカルの関数本体だけを測ると、Codon の `all_prime` 10 万件は通常版が約 0.44 秒、高速版が約 0.25 秒だった。PyPy の同ケースは通常版が約 0.5 秒、高速版が約 0.25–0.4 秒だった。Codon 高速版は `n < 2**31` に 32-bit Montgomery 演算を使う。同じ素数 `1000000007` を 10 万回判定した場合、従来の 64-bit 演算が約 47 ms、32-bit 演算が約 23 ms だった。実際の提出速度は入力・出力方式にも左右される。
+ローカルの関数本体だけを測ると、Codon の `all_prime` 10 万件は通常版が約 0.44 秒、高速版が約 0.25 秒だった。小容量版は高速版より数 % 遅い程度だった。PyPy の同ケースは通常版が約 0.5 秒、高速版が約 0.25–0.4 秒だった。Codon 高速版と小容量版は `n < 2**31` に 32-bit Montgomery 演算を使う。同じ素数 `1000000007` を 10 万回判定した場合、従来の 64-bit 演算が約 47 ms、32-bit 演算が約 23 ms だった。実際の提出速度は入力・出力方式にも左右される。

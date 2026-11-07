@@ -3,6 +3,7 @@
 from factorize import is_prime, factorize, _miller_rabin
 from is_prime_fast import is_prime as is_prime_fast
 from is_prime_bpsw import is_prime as is_prime_bpsw
+from is_prime_compact import is_prime as is_prime_compact
 
 
 def trial(n: int) -> list[int]:
@@ -24,14 +25,20 @@ for n in range(1, 2001):
     assert is_prime(n) == (len(expected) == 1 and expected[0] == n)
     assert is_prime_fast(n) == is_prime(n)
     assert is_prime_bpsw(n) == is_prime(n)
+    assert is_prime_compact(n) == is_prime(n)
 
 assert is_prime(941647938162115519)
 assert is_prime_fast(941647938162115519)
 assert is_prime_bpsw(941647938162115519)
+assert is_prime_compact(941647938162115519)
 assert is_prime_fast(4294967291)
 assert is_prime_bpsw(4294967291)
+assert is_prime_compact(4294967291)
 assert not is_prime_fast(4294967297)
 assert not is_prime_bpsw(4294967297)
+assert not is_prime_compact(4294967297)
+assert is_prime_compact(2147483647)
+assert not is_prime_compact(2147483649)
 assert factorize(4294967297) == [641, 6700417]
 assert _miller_rabin(5461, True) == 127
 assert factorize(5461) == [43, 127]
