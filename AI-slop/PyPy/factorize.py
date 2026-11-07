@@ -44,6 +44,12 @@ def _miller_rabin(n, extract=False, prefiltered=False):
                         return g
                 return 1
         else:
+            if extract:
+                # A witness can equal 1 modulo one prime factor even when
+                # it is not a nontrivial square root modulo n.
+                g = gcd(x - 1, n)
+                if 1 < g < n:
+                    return g
             return 1
     return 0
 

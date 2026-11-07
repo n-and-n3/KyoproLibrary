@@ -29,6 +29,7 @@ assert is_prime_fast(4294967291)
 assert not is_prime_fast(4294967297)
 assert factorize(4294967297) == [641, 6700417]
 assert _miller_rabin(5461, True) == 127
+assert _miller_rabin(4295098369, True) == 65537
 assert factorize(5461) == [43, 127]
 assert factorize(999381247093216751) == [999665081, 999716071]
 assert factorize(999999967571071807) == [364440383, 2743932929]

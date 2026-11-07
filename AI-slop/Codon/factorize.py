@@ -82,6 +82,12 @@ def _miller_rabin(n: int, extract: bool = False) -> int:
                         return g
                 return 1
         else:
+            if extract:
+                # Montgomery scaling is invertible modulo n, so this
+                # residue difference has the same gcd as the decoded one.
+                g = gcd(int(x) - int(ctx.one), n)
+                if 1 < g < n:
+                    return g
             return 1
     return 0
 
