@@ -140,13 +140,15 @@ def _fermat_near_square(n: int) -> int:
         a += 1
     if a * a < n:
         a += 1
-    for _ in range(32):
+    for _ in range(128):
         b2 = a * a - n
-        b = int(sqrt(float(b2)))
-        if b * b == b2:
-            f = a - b
-            if 1 < f < n:
-                return f
+        # Squares modulo 16 are 0, 1, 4, or 9.
+        if (531 >> (b2 & 15)) & 1:
+            b = int(sqrt(float(b2)))
+            if b * b == b2:
+                f = a - b
+                if 1 < f < n:
+                    return f
         a += 1
     return 1
 
