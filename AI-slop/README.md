@@ -7,6 +7,7 @@ Codon 0.19.3 用は [Codon/factorize.py](Codon/factorize.py)、PyPy 3.11 用は 
 ## 採用した方法
 
 - 小さい素数で先に割り、残りを [決定的 64-bit Miller–Rabin](https://miller-rabin.appspot.com/) で判定する。小さい範囲では `{2,7,61}`、それ以外では 7 基底を使う。
+- Codon の Miller–Rabin では基底が `n` 未満なら余分な剰余を取らない。公式の素数中心ケースを同一プロセス内で交互に測ると、判定部分が数 % 速くなった。
 - 判定中に `x² ≡ 1 (mod n)` かつ `x ≠ ±1 (mod n)` となったら `gcd(x−1,n)` で因数を取り出す。例: `5461 = 43 × 127` では底 2 の途中で `x = 128` となり、`128² ≡ 1 (mod 5461)` と `gcd(127, 5461) = 127` から因数が得られる。因数が出ない合成数は、近い因数向けの短い Fermat 法を試し、残りを [Brent 版 Pollard rho](https://maths-people.anu.edu.au/~brent/pub/pub051.html) で分解する。
 - Codon では 64-bit Montgomery 乗算、PyPy では組み込みの `pow(a,b,n)` と `math.gcd` を使う。rho の積は Codon で最大 256 回、PyPy で最大 512 回ごとに gcd を取る。
 

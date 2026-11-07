@@ -60,7 +60,9 @@ def _miller_rabin(n: int, extract: bool = False) -> int:
     bases = [2, 7, 61] if n < 4759123141 else [2, 325, 9375, 28178, 450775, 9780504, 1795265022]
     minus_one = ctx.n - ctx.one
     for base in bases:
-        a = base % n
+        a = base
+        if a >= n:
+            a %= n
         if a == 0:
             continue
         x = ctx.pow(ctx.encode(u64(a)), d)
