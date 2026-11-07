@@ -1,12 +1,13 @@
 # Codon 版 KyoproLibrary
 
-AtCoder の Codon 0.19.3 を対象に、`Python/` の 23 ファイルと `cpp/` の 43 ファイルに対応するコードを置いています。`convolution.py` はこのディレクトリの直下にあり、`convolution(a, b)` で 998244353 を法とする畳み込みを返します。`simd` は使用しません。64-bit 素数判定と素因数分解は `factorize.py`、多数の素数判定向け高速版は `is_prime_fast.py` にあります。詳細は [../README.md](../README.md) を参照してください。
+AtCoder の Codon 0.19.3 を対象に、`Python/` の 23 ファイルと `cpp/` の 43 ファイルに対応するコードを置いています。`convolution.py` はこのディレクトリの直下にあり、`convolution(a, b)` で 998244353 を法とする畳み込みを返します。`simd` は使用しません。64-bit 素数判定と素因数分解は `factorize.py`、多数の素数判定向け高速版は `is_prime_fast.py`、短い Baillie–PSW 版は `is_prime_bpsw.py` にあります。詳細は [../README.md](../README.md) を参照してください。
 
 ```
 AI-slop/Codon/
 ├── convolution.py       # 単体で提出可能
 ├── factorize.py         # is_prime / factorize、10**18 まで
 ├── is_prime_fast.py     # 多数の判定向けの FJ32_256 / FJ64_16k 版
+├── is_prime_bpsw.py     # 短い Baillie–PSW 版
 ├── verify_factorize.py # 数論ライブラリの自己検証
 ├── Python/              # 元の Python ファイルごとに対応
 ├── cpp/                 # 元の cpp ファイルごとに対応
