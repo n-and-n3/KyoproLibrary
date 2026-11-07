@@ -12,15 +12,16 @@ _SMALL = (2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37)
 _BASES64 = (2, 325, 9375, 28178, 450775, 9780504, 1795265022)
 
 
-def _miller_rabin(n, extract=False):
+def _miller_rabin(n, extract=False, prefiltered=False):
     """Return 0 for prime, 1 for composite, or a factor when extract=True."""
     if n < 2:
         return 1
-    for p in _SMALL:
-        if n == p:
-            return 0
-        if n % p == 0:
-            return p if extract else 1
+    if not prefiltered:
+        for p in _SMALL:
+            if n == p:
+                return 0
+            if n % p == 0:
+                return p if extract else 1
     s = ((n - 1) & (1 - n)).bit_length() - 1
     d = (n - 1) >> s
     bases = (2, 7, 61) if n < 4759123141 else _BASES64
@@ -125,12 +126,18 @@ def factorize(n):
     if not 1 <= n < 1 << 64:
         raise ValueError("factorize requires 1 <= n < 2**64")
     factors = []
+    # Every remaining factor is coprime to _SMALL, so recursive tests can
+    # skip the same trial divisions.
+    for p in _SMALL:
+        while n % p == 0:
+            factors.append(p)
+            n //= p
     stack = [n]
     while stack:
         m = stack.pop()
         if m == 1:
             continue
-        result = _miller_rabin(m, True)
+        result = _miller_rabin(m, True, True)
         if result == 0:
             factors.append(m)
             continue
