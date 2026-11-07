@@ -21,7 +21,7 @@ def _miller_rabin(n, extract=False):
             return 0
         if n % p == 0:
             return p if extract else 1
-    s = (n - 1 & 1 - n).bit_length() - 1
+    s = ((n - 1) & (1 - n)).bit_length() - 1
     d = (n - 1) >> s
     bases = (2, 7, 61) if n < 4759123141 else _BASES64
     for base in bases:

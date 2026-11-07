@@ -25,6 +25,9 @@ for n in range(1, 2001):
 
 assert is_prime(941647938162115519)
 assert is_prime_fast(941647938162115519)
+assert is_prime_fast(4294967291)
+assert not is_prime_fast(4294967297)
+assert factorize(4294967297) == [641, 6700417]
 assert factorize(999381247093216751) == [999665081, 999716071]
 assert factorize(999999967571071807) == [364440383, 2743932929]
 assert factorize(341550071728321) == [10670053, 32010157]
