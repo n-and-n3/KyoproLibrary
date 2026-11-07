@@ -56,8 +56,8 @@ def is_prime(n):
 
 def _rho(n):
     """Brent's batched-GCD Pollard rho; n must be odd and composite."""
-    # PyPy's three-argument pow is slow once the modulus exceeds signed 64-bit.
-    large = n >= 1 << 63
+    # Direct squaring is faster for small moduli and above signed 64-bit.
+    direct = n < 1 << 31 or n >= 1 << 63
     while True:
         y = randrange(1, n)
         c = randrange(1, n)
@@ -66,7 +66,7 @@ def _rho(n):
         while g == 1:
             x = y
             for _ in range(r):
-                if large:
+                if direct:
                     y = (y * y + c) % n
                 else:
                     y = pow(y, 2, n) + c
@@ -78,7 +78,7 @@ def _rho(n):
                 q = 1
                 batch = min(512, r - k)
                 for _ in range(batch):
-                    if large:
+                    if direct:
                         y = (y * y + c) % n
                     else:
                         y = pow(y, 2, n) + c
@@ -91,7 +91,7 @@ def _rho(n):
         if g == n:
             g = 1
             while g == 1:
-                if large:
+                if direct:
                     ys = (ys * ys + c) % n
                 else:
                     ys = pow(ys, 2, n) + c
