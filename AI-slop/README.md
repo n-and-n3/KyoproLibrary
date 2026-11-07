@@ -7,7 +7,7 @@ Codon 0.19.3 用は [Codon/factorize.py](Codon/factorize.py)、PyPy 3.11 用は 
 ## 採用した方法
 
 - 小さい素数で先に割り、残りを [決定的 64-bit Miller–Rabin](https://miller-rabin.appspot.com/) で判定する。小さい範囲では `{2,7,61}`、それ以外では 7 基底を使う。
-- 判定中に `x² ≡ 1 (mod n)` かつ `x ≠ ±1 (mod n)` となったら `gcd(x−1,n)` で因数を取り出す。因数が出ない合成数は、近い因数向けの短い Fermat 法を試し、残りを [Brent 版 Pollard rho](https://maths-people.anu.edu.au/~brent/pub/pub051.html) で分解する。
+- 判定中に `x² ≡ 1 (mod n)` かつ `x ≠ ±1 (mod n)` となったら `gcd(x−1,n)` で因数を取り出す。例: `5461 = 43 × 127` では底 2 の途中で `x = 128` となり、`128² ≡ 1 (mod 5461)` と `gcd(127, 5461) = 127` から因数が得られる。因数が出ない合成数は、近い因数向けの短い Fermat 法を試し、残りを [Brent 版 Pollard rho](https://maths-people.anu.edu.au/~brent/pub/pub051.html) で分解する。
 - Codon では 64-bit Montgomery 乗算、PyPy では組み込みの `pow(a,b,n)` と `math.gcd` を使う。rho の積は Codon で最大 256 回、PyPy で最大 128 回ごとに gcd を取る。
 
 ## 検証
@@ -20,4 +20,4 @@ Miller–Rabin 中の因数抽出は、分解ケースの最初の 2,635 数に�
 
 オンラインの最速提出は 2026-11-07 時点で、[factorize](https://judge.yosupo.jp/submissions/?problem=factorize&order=%2Btime&status=AC) が C++ 13 ms、PyPy 237 ms、[primality_test](https://judge.yosupo.jp/submissions/?problem=primality_test&order=%2Btime&status=AC) が C++ 30 ms、PyPy 331 ms。Codon の提出言語は Library Checker にない。ローカル値とオンライン値は CPU・入出力が違うため直接比較しない。
 
-ローカルの関数本体だけを測ると、Codon の `all_prime` 10 万件は通常版が約 0.44 秒、高速版が約 0.25 秒だった。PyPy の同ケースは通常版が約 0.5 秒、高速版が約 0.25–0.4 秒だった。実際の提出速度は入力・出力方式にも左右される。
+ローカルの関数本体だけを測ると、Codon の `all_prime` 10 万件は通常版が約 0.44 秒、高速版が約 0.25 秒だった。PyPy の同ケースは通常版が約 0.5 秒、高速版が約 0.25–0.4 秒だった。Codon 高速版は `n < 2**31` に 32-bit Montgomery 演算を使う。同じ素数 `1000000007` を 10 万回判定した場合、従来の 64-bit 演算が約 47 ms、32-bit 演算が約 23 ms だった。実際の提出速度は入力・出力方式にも左右される。

@@ -1,6 +1,6 @@
 """Run with PyPy 3.11: pypy3 verify_factorize.py."""
 
-from factorize import is_prime, factorize
+from factorize import is_prime, factorize, _miller_rabin
 from is_prime_fast import is_prime as is_prime_fast
 
 
@@ -28,6 +28,8 @@ assert is_prime_fast(941647938162115519)
 assert is_prime_fast(4294967291)
 assert not is_prime_fast(4294967297)
 assert factorize(4294967297) == [641, 6700417]
+assert _miller_rabin(5461, True) == 127
+assert factorize(5461) == [43, 127]
 assert factorize(999381247093216751) == [999665081, 999716071]
 assert factorize(999999967571071807) == [364440383, 2743932929]
 assert factorize(341550071728321) == [10670053, 32010157]
